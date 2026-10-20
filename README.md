@@ -22,6 +22,11 @@ Developed by **Dr. Bipul Das**, Department of Mechanical Engineering, NIT Silcha
   - *Smarter highlights:* the AI's judgement replaces the cue-phrase rules, but a teacher's manual choice always wins.
   - *Study notes:* a summary, topic-wise points, formulas with symbol meanings, and revision questions with model answers. Everything is editable and goes into the student file, and it can be translated with Bhashini.
 - **Classes with teacher approval (sign-in).** Teachers create a class and share its code or join link. Students sign in with Google or an email code and ask to join, and the teacher approves, declines or removes them. Notes published to a class can be opened only by approved students. This is enforced by the database's row-level security, not just hidden in the app.
+- **AI quiz with instant scores.** After the lecture, AI writes five multiple-choice questions from it, each with an explanation, and the teacher edits them. The quiz travels inside the student notes file:
+  - Students enter their name and roll number, answer, and submit once. They see their score and the explanations immediately.
+  - Students send their result to the teacher with one tap (WhatsApp, if the teacher adds a number) or by copy and paste. Results travel as a coded message, so no login, server or AI key is needed on the student's side.
+  - The teacher pastes the collected messages into Medha to build a class score sheet (roll, name, marks per question, total, percentage), which can be copied or downloaded for Excel. The first submission from each roll number counts.
+  - It is a practice tool: the correct answers are inside the notes file, so it should not be used for formal examinations.
 - **Translation for students.** The student page has a "Read in…" selector. Teacher-translated (Bhashini) languages switch instantly. Any other language is translated on the device by Chrome's built-in Translator API, with Google Translate links as a fallback.
 - **Print or save as PDF** from the student page.
 - **Resume work.** Drafts are saved automatically in the browser. An editable copy (.json), or any exported student file, can be reopened later.
@@ -47,9 +52,13 @@ Developed by **Dr. Bipul Das**, Department of Mechanical Engineering, NIT Silcha
 2. Allow microphone access when asked.
 3. Choose the teaching language and press the red button.
 
+### Install Medha as an app
+
+Medha is an installable web app (PWA). Once it is on GitHub Pages, open the link in Chrome on Android, or Chrome or Edge on a computer, and tap **Install Medha app** (or Chrome's menu → **Install app** / **Add to Home screen**). Medha then gets its own icon, opens full-screen, and starts even without internet. Recording, AI and translation still need internet. To publish on the Google Play Store later, the same site can be packaged with [PWABuilder](https://www.pwabuilder.com).
+
 ### Publish free on GitHub Pages
 
-1. Create a GitHub repository named `medha` and upload `index.html`, `config.js`, `supabase-setup.sql`, `README.md` and `LICENSE`.
+1. Create a GitHub repository named `medha` and upload all files from the folder: `index.html`, `config.js`, `manifest.webmanifest`, `sw.js`, the four icon `.png` files, `supabase-setup.sql`, `README.md` and `LICENSE`.
 2. Open **Settings → Pages**, set *Source* to *Deploy from a branch*, choose `main` and `/ (root)`, then save.
 3. After a minute the app is live at `https://<your-username>.github.io/medha/`.
 

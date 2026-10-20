@@ -4,7 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Medha</title>
-<meta name="description" content="Medha (Multilingual Education through Dictation, Highlights &amp; AI): live lecture note-taker for teachers. Transcribes the class, highlights key points, and translates notes into Indian languages with Bhashini.">
+<meta name="description" content="Medha (Multilingual Education through Dictation, Highlights &amp; AI): live lecture note-taker for teachers. Transcribes the class, highlights key points, and translates notes into Indian languages with AI.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e6a70">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Medha">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Noto+Sans:wght@400;600;700&family=Noto+Sans+Devanagari:wght@600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
@@ -43,7 +49,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
 .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
 label.f{display:grid;gap:4px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
-input,select{font:inherit;font-size:15px;text-transform:none;letter-spacing:0;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+input,select,textarea{font:inherit;font-size:15px;text-transform:none;letter-spacing:0;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
 input[type=checkbox]{width:auto}
 .banner{border-radius:10px;padding:10px 14px;font-size:14px;background:var(--hl-exam);color:var(--tg-exam)}
 details.card summary{cursor:pointer;font:700 16px var(--display);list-style:none;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
@@ -133,6 +139,26 @@ aside{position:sticky;top:12px;display:grid;gap:14px}
 .reader-bar{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
 .reader-bar b{font:700 16px var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .reader iframe{border:0;width:100%;height:100%;background:var(--bg)}
+textarea{resize:vertical;width:100%}
+.qz-list{display:grid;gap:12px}
+.qz-item{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:6px}
+.qz-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.qz-head b{font:700 13px var(--mono);color:var(--brand)}
+.qz-type{font:600 11px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.qz-q{font-weight:600;outline:none;border-radius:4px;padding:1px 3px}
+.qz-opt{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.qz-opt input{width:auto;margin-top:4px}
+.qz-opt span,.qz-ans{outline:none;border-radius:4px;padding:1px 3px;min-width:0;overflow-wrap:anywhere}
+.qz-ans{font-size:14px;color:var(--muted)}
+.qz-q:hover,.qz-opt span:hover,.qz-ans:hover{background:var(--bg)}
+.res-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;margin-top:10px}
+table.res{border-collapse:collapse;width:100%;font-size:13px}
+table.res th,table.res td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap}
+table.res th{background:var(--bg);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+table.res td.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+table.res tr:last-child td{border-bottom:0}
+.res-sum{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted);margin-top:8px}
+.res-sum b{color:var(--ink);font-family:var(--mono)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;z-index:5;max-width:90vw}
 footer{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between}
 @media (max-width:860px){.main{grid-template-columns:1fr}aside{position:static}}
@@ -147,12 +173,12 @@ footer{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px;jus
       <div class="logo" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand-ink)" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
       <div><h1>Medha <span class="dev" lang="sa">मेधा</span></h1><p><b class="acr">M</b>ultilingual <b class="acr">E</b>ducation through <b class="acr">D</b>ictation, <b class="acr">H</b>ighlights &amp; <b class="acr">A</b>I</p></div>
     </div>
-    <div class="acct" id="acct"></div>
+    <div class="btns"><button class="btn pri" id="installBtn" hidden>Install Medha app</button><div class="acct" id="acct"></div></div>
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button role="tab" data-view="record" id="tab-record">Record &amp; edit</button>
-    <button role="tab" data-view="classes" id="tab-classes">Classes<span class="badge" id="pendBadge" hidden></span></button>
+    <button role="tab" data-view="classes" id="tab-classes" hidden>Classes<span class="badge" id="pendBadge" hidden></span></button>
   </nav>
 
   <div class="banner" id="errBanner" hidden></div>
@@ -171,10 +197,10 @@ footer{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px;jus
     <label class="f">Teacher<input id="m-teacher" data-m="teacher" placeholder="Your name"></label>
     <label class="f">Date<input id="m-date" data-m="date" type="date"></label>
     <label class="f">Teaching language<select id="m-lang" data-m="lang"></select></label>
-    <label class="f">Speech engine<select id="engine"><option value="browser">Browser (Chrome / Edge)</option><option value="bhashini">Bhashini (Govt. of India)</option></select></label>
+    <label class="f" hidden>Speech engine<select id="engine"><option value="browser">Browser (Chrome / Edge)</option></select></label>
   </section>
 
-  <details class="card" id="bhCard">
+  <details class="card" id="bhCard" hidden>
     <summary><span>Bhashini connection</span><span class="chip" id="bhChip">Not connected</span></summary>
     <div class="bh-body">
       <p class="small">Bhashini is the Government of India's National Language Translation Mission. It powers translation of your notes into 22 Indian languages and speech recognition for languages browsers can't handle, such as Bodo and Manipuri. Get a free User ID and ULCA API key by signing up at <a href="https://bhashini.gov.in/ulca" target="_blank" rel="noopener">bhashini.gov.in/ulca</a>, then open <i>My Profile</i>.</p>
@@ -227,11 +253,26 @@ footer{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px;jus
         <div class="btns" style="margin-bottom:10px"><button class="btn" id="studyBtn">Generate study notes</button><span class="small" id="studyMsg"></span></div>
         <div class="study" id="study"></div>
       </section>
+      <section class="card" aria-label="Quiz">
+        <div class="sec-h"><h2>Quiz</h2><p class="hint">5 questions · marked instantly</p></div>
+        <div class="btns" style="margin-bottom:10px"><button class="btn" id="qzBtn">Generate quiz</button><span class="small" id="qzMsg"></span></div>
+        <div id="quiz"></div>
+        <label class="f" style="margin-top:12px">Your WhatsApp number for answers (optional)<input id="waNum" inputmode="tel" placeholder="e.g. 98xxxxxxxx" autocomplete="off"></label>
+        <p class="small" style="margin-top:4px">If set, students get a button that sends their answers to you on WhatsApp. The number is written into the notes file.</p>
+      </section>
+      <section class="card" aria-label="Scores">
+        <div class="sec-h"><h2>Scores</h2><p class="hint">Class score sheet</p></div>
+        <p class="small">Paste the result messages students sent you. You can paste many at once, or add more later.</p>
+        <textarea id="ansIn" rows="4" placeholder="Paste students' Medha result messages here" style="margin-top:8px"></textarea>
+        <div class="btns" style="margin-top:8px"><button class="btn pri" id="gradeBtn">Add to score sheet</button><span class="small" id="gradeMsg"></span></div>
+        <div id="results"></div>
+      </section>
       <section class="card share" aria-label="Share">
         <h2>Share with students</h2>
-        <h3>1 · Translate with Bhashini</h3>
-        <p class="small">Pick the languages your class speaks. Translations are packed into the student file, so students need no account and can read them offline.</p>
+        <h3>1 · Translate for students</h3>
+        <p class="small">Pick the languages your class speaks. Translations are packed into the student file, so students switch language instantly, even offline.</p>
         <div class="langs" id="trLangs"></div>
+        <div class="btns" hidden><label class="small" for="trEngine">Translate with</label><select id="trEngine" style="width:auto"><option value="ai">AI assistant (Gemini / Claude)</option></select></div>
         <div class="btns"><button class="btn" id="trBtn">Translate notes</button><span class="small" id="trMsg"></span></div>
         <hr class="divider">
         <h3>2 · Send the notes</h3>
@@ -241,11 +282,13 @@ footer{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px;jus
           <button class="btn" id="copyBtn">Copy as text</button>
           <button class="btn" id="saveBtn">Save editable copy</button>
         </div>
+        <div id="pubBlock" hidden>
         <hr class="divider">
         <h3>3 · Publish to a class</h3>
         <p class="small" id="pubHint">Sign in under Classes to publish notes that only the students you approve can open.</p>
         <div class="btns" id="pubRow" hidden><select id="pubClass" aria-label="Class to publish to" style="width:auto;flex:1;min-width:0"></select><button class="btn pri" id="pubBtn">Publish</button></div>
         <span class="small" id="pubMsg"></span>
+        </div>
       </section>
     </aside>
   </div>
@@ -289,7 +332,7 @@ footer{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px;jus
     </div>
   </div>
 
-  <footer><span>Medha · developed by Dr. Bipul Das, NIT Silchar · translation and speech by Bhashini, MeitY</span><span>Drafts stay in this browser until you share or publish them.</span></footer>
+  <footer><span>Medha · developed by Dr. Bipul Das, NIT Silchar</span><span>Drafts stay in this browser until you share or publish them.</span></footer>
 </div>
 <div class="reader" id="reader" hidden>
   <div class="reader-bar"><b id="readerTitle"></b><button class="btn" id="readerClose">Close</button></div>
@@ -337,7 +380,7 @@ const ORDER = ["exam","def","formula","key"];
 
 /* ================= state ================= */
 const today = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
-const fresh = () => ({meta:{title:"",course:"",teacher:"",date:today(),lang:"en"}, segs:[], elapsed:0, tr:{}, pick:["as","bn","hi"], engine:"browser", study:null, lid:uid()});
+const fresh = () => ({meta:{title:"",course:"",teacher:"",date:today(),lang:"en"}, segs:[], elapsed:0, tr:{}, pick:["as","bn","hi"], engine:"browser", study:null, lid:uid(), quiz:null, results:[]});
 function normalise(d){
   const f = fresh(); d = d || {};
   const meta = Object.assign(f.meta, d.meta||{});
@@ -346,12 +389,13 @@ function normalise(d){
   return {meta, segs:(d.segs||[]).map(s=>({id:s.id||uid(), t:+s.t||0, text:String(s.text||""), manual:s.manual??null, ai:s.ai??null, aiDone:!!s.aiDone})),
     elapsed:+d.elapsed||0, tr:d.tr&&typeof d.tr==="object"?d.tr:{}, pick:Array.isArray(d.pick)?d.pick:f.pick, engine:d.engine==="bhashini"?"bhashini":"browser",
     study:d.study&&typeof d.study==="object"?d.study:null,
-    notesLang:L[d.notesLang]?d.notesLang:undefined, studyLang:L[d.studyLang]?d.studyLang:undefined, lid:d.lid||uid()};
+    notesLang:L[d.notesLang]?d.notesLang:undefined, studyLang:L[d.studyLang]?d.studyLang:undefined, lid:d.lid||uid(), trBy:d.trBy&&typeof d.trBy==="object"?d.trBy:{},
+    quiz:d.quiz&&Array.isArray(d.quiz.qs)?d.quiz:null, quizLang:L[d.quizLang]?d.quizLang:undefined, results:Array.isArray(d.results)?d.results:[]};
 }
 const uid = () => Math.random().toString(36).slice(2,10);
 let S;
 try { S = JSON.parse(localStorage.getItem(KEY)) || JSON.parse(localStorage.getItem("medha-draft-v1")); } catch(e) {}
-S = normalise(S);
+S = normalise(S); S.engine = "browser";
 let saveTimer;
 function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }, 400); }
 
@@ -457,27 +501,44 @@ const aiReady = () => !!aiCfg.key;
 const aiModel = () => aiCfg.model || AI_DEFAULT_MODEL[aiCfg.prov];
 const outLangCode = () => aiCfg.out === "en" ? "en" : S.meta.lang;
 
+/* lighter Gemini model to fall back to when the main one is overloaded */
+const GEMINI_FALLBACK = "gemini-3.1-flash-lite";
+const BUSY = new Set([500, 502, 503, 504, 529]);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function aiStatus(t){ ["#cleanMsg","#studyMsg","#aiMsg","#qzMsg","#gradeMsg"].forEach(id=>{ const el=$(id); if (el && /…$/.test(el.textContent)) el.textContent = t; }); }
+async function aiFetch(system, user, model){
+  if (aiCfg.prov === "claude") {
+    return fetch("https://api.anthropic.com/v1/messages", {method:"POST",
+      headers:{"content-type":"application/json","x-api-key":aiCfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body: JSON.stringify({model, max_tokens:8000, system, messages:[{role:"user", content:user}]})});
+  }
+  return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {method:"POST",
+    headers:{"Content-Type":"application/json","x-goog-api-key":aiCfg.key},
+    body: JSON.stringify({systemInstruction:{parts:[{text:system}]}, contents:[{role:"user", parts:[{text:user}]}],
+      generationConfig:{responseMimeType:"application/json", temperature:0.2}})});
+}
 async function aiCall(system, user){
   if (!aiReady()) throw new Error("Add an AI key first (AI assistant, above).");
-  let res, j = null;
-  try {
-    if (aiCfg.prov === "claude") {
-      res = await fetch("https://api.anthropic.com/v1/messages", {method:"POST",
-        headers:{"content-type":"application/json","x-api-key":aiCfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body: JSON.stringify({model:aiModel(), max_tokens:8000, system, messages:[{role:"user", content:user}]})});
-    } else {
-      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(aiModel())}:generateContent`, {method:"POST",
-        headers:{"Content-Type":"application/json","x-goog-api-key":aiCfg.key},
-        body: JSON.stringify({systemInstruction:{parts:[{text:system}]}, contents:[{role:"user", parts:[{text:user}]}],
-          generationConfig:{responseMimeType:"application/json", temperature:0.2}})});
-    }
-  } catch(e) { throw new Error("Could not reach the AI service. Check the internet connection."); }
-  try { j = await res.json(); } catch(e) {}
+  /* busy servers: retry the chosen model twice (after 3 s and 8 s); for Gemini, then try the lighter model */
+  const plan = [[aiModel(),0],[aiModel(),3000],[aiModel(),8000]];
+  if (aiCfg.prov === "gemini" && aiModel() !== GEMINI_FALLBACK) plan.push([GEMINI_FALLBACK,2000]);
+  let res, j = null, model = aiModel(), busy = false;
+  for (let i=0; i<plan.length; i++) {
+    const [m, wait] = plan[i];
+    if (wait) { aiStatus(m === model ? "The AI service is busy. Trying again…" : "Still busy. Switching to a lighter AI model…"); await sleep(wait); }
+    try { res = await aiFetch(system, user, m); }
+    catch(e) { throw new Error("Could not reach the AI service. Check the internet connection."); }
+    j = null; try { j = await res.json(); } catch(e) {}
+    busy = BUSY.has(res.status) || (m !== model && !res.ok);   // a failed fallback still means "busy"
+    if (!busy) { model = m; break; }
+  }
+  if (busy) throw new Error("The AI service is overloaded right now (this is on Google's or Anthropic's side). Please try again in a few minutes.");
   if (!res.ok) {
     const m = j && j.error && (j.error.message || j.error.type) || res.statusText;
     if (res.status === 401 || res.status === 403 || /api key/i.test(m||"")) throw new Error("The AI service rejected the API key. Check it under AI assistant.");
     if (res.status === 429) throw new Error("The AI service's usage limit was reached. Wait a minute and try again.");
-    if (res.status === 404) throw new Error(`Model "${aiModel()}" was not found. Check the model name under AI assistant.`);
+    if (res.status === 404) throw new Error(`Model "${model}" was not found. Check the model name under AI assistant.`);
+    if (BUSY.has(res.status)) throw new Error("The AI service is overloaded right now (this is on Google's or Anthropic's side). Please try again in a few minutes.");
     throw new Error("AI error " + res.status + ": " + m);
   }
   const text = aiCfg.prov === "claude"
@@ -626,6 +687,170 @@ $("#aiTest").onclick = async () => {
   renderAI();
 };
 
+/* ================= quiz =================
+   The AI writes a short quiz from the lecture; the teacher edits it; it travels inside the
+   student file. Students' answers come back as a coded message that the teacher pastes here,
+   and the AI marks the short answers. Multiple-choice questions are marked by Medha itself. */
+const MARKS = {mcq:1, short:2};
+const QUIZ_SYS = (lang, n) => `You write a short practice quiz from an engineering lecture for undergraduate students in India.
+Write in ${lang}; keep standard technical terms, symbols and formulas in English. Use only what the lecture says.
+Write exactly ${n} multiple-choice questions, each with four options.
+Return ONLY JSON {"questions":[{"type":"mcq","q":"question","options":["A","B","C","D"],"correct":0,"answer":"one-sentence explanation of why the correct option is right"}]}.
+Options must be plausible, with exactly one correct; "correct" is the 0-based index of it. Mix recall with understanding (why, how, what happens if), and spread the correct answers across positions.`;
+const GRADE_SYS = `You mark students' short answers to one quiz question from an engineering lecture.
+You receive JSON {"question","model_answer","max_marks","answers":[{"id","text"}]}.
+Return ONLY JSON {"results":[{"id","marks","feedback"}]} with every id.
+- marks is a whole number from 0 to max_marks: full marks if the answer contains all key points of the model answer, partial if some, 0 if none or off-topic.
+- Judge the meaning, not the wording: ignore spelling, grammar and language; answers may be in English or any Indian language.
+- feedback is one short, encouraging sentence in English saying what was right or missing.`;
+const quizMax = () => S.quiz ? S.quiz.qs.reduce((a,q)=>a+MARKS[q.type],0) : 0;
+function quizItems(){
+  if (!S.quiz) return [];
+  const out = [];
+  S.quiz.qs.forEach((q,i)=>{ out.push([`qz:${i}.q`, q.q]); (q.options||[]).forEach((o,k)=>out.push([`qz:${i}.o.${k}`, o])); if (q.answer) out.push([`qz:${i}.a`, q.answer]); });
+  return out;
+}
+function dropQuizTr(){ Object.values(S.tr).forEach(t=>Object.keys(t).forEach(k=>{ if (k.startsWith("qz:")) delete t[k]; })); }
+function renderQuiz(){
+  const box = $("#quiz"), qz = S.quiz;
+  $("#qzBtn").textContent = qz ? "Write a new quiz" : "Generate quiz";
+  if (!qz || !qz.qs.length) { box.innerHTML = `<p class="hint">After the lecture, AI writes five multiple-choice questions from it. Students answer inside the notes file, see their score at once, and send it to you.</p>`; return; }
+  const ed = (key, text, cls) => `<span class="${cls}" contenteditable="true" data-qz="${key}">${esc(text)}</span>`;
+  box.innerHTML = `<div class="qz-list">${qz.qs.map((q,i)=>`<div class="qz-item" data-i="${i}">
+      <div class="qz-head"><span><b>Q${i+1}</b> <span class="qz-type">1 mark</span></span><button class="x" data-qzdel="${i}" aria-label="Delete question ${i+1}">✕</button></div>
+      ${ed(`${i}.q`, q.q, "qz-q")}
+      ${q.type==="mcq" ? q.options.map((o,k)=>`<label class="qz-opt"><input type="radio" name="qzc${i}" value="${k}" ${k===q.correct?"checked":""} aria-label="Mark option ${k+1} correct">${ed(`${i}.o.${k}`, o, "")}</label>`).join("") : ""}
+      <div><span class="small">${q.type==="mcq"?"Explanation":"Model answer"}: </span>${ed(`${i}.a`, q.answer||"", "qz-ans")}</div>
+    </div>`).join("")}</div>
+    <p class="small" style="margin-top:8px">${qz.qs.length} questions · ${quizMax()} marks. Click any text to edit it; tick the circle next to the correct option.</p>`;
+}
+let quizzing = false;
+$("#qzBtn").onclick = async () => {
+  if (quizzing) return;
+  if (!S.segs.length) { toast("Record or type some notes first"); return; }
+  if (!aiReady()) { openCard("#aiCard"); toast("Connect the AI assistant first"); return; }
+  if (S.results.length && !confirmInline("quiz")) return;
+  quizzing = true; $("#qzBtn").disabled = true; $("#qzMsg").textContent = "Writing the quiz…"; showError("");
+  try {
+    const n = 5;
+    const transcript = S.segs.map(s=>`${catOf(s)?"("+CATS[catOf(s)]+") ":""}${s.text}`).join("\n");
+    const j = await aiJSON(QUIZ_SYS(L[outLangCode()].name, n), `${ctxLine()}\n\nLecture transcript:\n${transcript}`);
+    const str = v => String(v??"").trim();
+    const qs = (j.questions||[]).filter(q => q && Array.isArray(q.options) && q.options.length >= 2).map(q=>{
+      const options = q.options.map(str).filter(Boolean).slice(0,4); const correct = Math.min(Math.max(0, +q.correct||0), options.length-1);
+      return {type:"mcq", q:str(q.q), options, correct, answer:str(q.answer)};
+    }).filter(q=>q.q).slice(0,5);
+    if (!qs.length) throw new Error("The AI did not return any questions. Try again.");
+    dropQuizTr(); S.quiz = {id:uid(), qs}; S.quizLang = outLangCode(); S.results = [];
+    $("#qzMsg").textContent = "Done. Check the questions and correct answers before sharing.";
+    save(); renderQuiz(); renderResults(); renderTrLangs();
+  } catch(e) { $("#qzMsg").textContent = ""; showError(e.message); }
+  quizzing = false; $("#qzBtn").disabled = false;
+};
+$("#quiz").addEventListener("input", e => {
+  const k = e.target.dataset && e.target.dataset.qz; if (!k || !S.quiz) return;
+  const [i, f, n] = k.split("."), q = S.quiz.qs[+i], v = e.target.innerText.replace(/\s+/g," ").trim();
+  if (f === "q") q.q = v; else if (f === "a") q.answer = v; else if (f === "o") q.options[+n] = v;
+  Object.values(S.tr).forEach(t=>delete t["qz:"+k]); save(); renderTrLangs();
+});
+$("#quiz").addEventListener("change", e => {
+  const m = e.target.name && e.target.name.match(/^qzc(\d+)$/); if (!m || !S.quiz) return;
+  S.quiz.qs[+m[1]].correct = +e.target.value; save(); toast("Correct answer updated");
+});
+$("#quiz").addEventListener("click", e => {
+  const b = e.target.closest("[data-qzdel]"); if (!b || !S.quiz) return;
+  const i = +b.dataset.qzdel;
+  if (S.results.length) { toast("Students have already answered this quiz. Clear the scores before deleting questions."); return; }
+  S.quiz.qs.splice(i,1); dropQuizTr(); if (!S.quiz.qs.length) S.quiz = null; save(); renderQuiz(); renderTrLangs();
+});
+$("#quiz").addEventListener("keydown", e => { if (e.target.dataset && e.target.dataset.qz && e.key === "Enter") { e.preventDefault(); e.target.blur(); } });
+try { $("#waNum").value = localStorage.getItem("medha-wa") || ""; } catch(e) {}
+$("#waNum").addEventListener("input", e => { try { localStorage.setItem("medha-wa", e.target.value.trim()); } catch(err) {} });
+const waDigits = () => { let d = ($("#waNum").value||"").replace(/\D/g,""); if (d.length === 10) d = "91" + d; return d.length >= 11 ? d : ""; };
+
+/* ---------- reading students' answers and marking them ---------- */
+function decodeSubmissions(text){
+  const out = [], bad = {other:0, broken:0};
+  const re = /#MEDHA:([A-Za-z0-9+\/=]+)#/g; let m;
+  while ((m = re.exec(text))) {
+    try {
+      const d = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+      if (!S.quiz || d.lid !== S.lid || d.qid !== S.quiz.id) { bad.other++; continue; }
+      out.push({name:String(d.name||"").slice(0,80), roll:String(d.roll||"").slice(0,40), ans:Array.isArray(d.ans)?d.ans:[]});
+    } catch(e) { bad.broken++; }
+  }
+  return {out, bad};
+}
+let grading = false;
+$("#gradeBtn").onclick = async () => {
+  if (grading) return;
+  if (!S.quiz) { toast("Generate a quiz first"); return; }
+  const raw = $("#ansIn").value;
+  if (!raw.trim()) { toast("Paste the students' answer messages first"); return; }
+  const {out, bad} = decodeSubmissions(raw);
+  if (!out.length) {
+    $("#gradeMsg").textContent = bad.other ? "These answers are for a different lecture or an older version of this quiz. Open the matching lecture first." : "No Medha answers found. Paste the whole message each student sent, including the line that starts with #MEDHA.";
+    return;
+  }
+  const shortQs = S.quiz.qs.map((q,i)=>[q,i]).filter(([q])=>q.type==="short");
+  if (shortQs.length && !aiReady()) { openCard("#aiCard"); toast("Connect the AI assistant to mark short answers"); return; }
+  /* the first message from each roll number counts, including rolls marked in an earlier batch */
+  const seen = new Set(S.results.map(r => String(r.roll || r.name).toUpperCase()));
+  const byRoll = new Map(); let dup = 0;
+  out.forEach(s => { const k = String(s.roll || s.name).toUpperCase(); if (seen.has(k) || byRoll.has(k)) dup++; else byRoll.set(k, s); });
+  const subs = [...byRoll.values()];
+  if (!subs.length) { $("#gradeMsg").textContent = "All of these students have already been marked. Only the first answer from each roll number counts."; return; }
+  grading = true; $("#gradeBtn").disabled = true; showError("");
+  try {
+    const rows = subs.map(s => ({name:s.name, roll:s.roll, marks:S.quiz.qs.map(()=>0), fb:S.quiz.qs.map(()=>"")}));
+    S.quiz.qs.forEach((q,i) => { if (q.type !== "mcq") return; rows.forEach((r,k)=>{ const a = subs[k].ans[i]; const ok = a !== null && a !== "" && +a === q.correct; r.marks[i] = ok ? MARKS.mcq : 0; r.fb[i] = ok ? "Correct" : (a===null||a===""||a===undefined ? "Not answered" : "Incorrect"); }); });
+    for (const [q,i] of shortQs) {
+      const items = rows.map((r,k)=>({id:"s"+k, text:String(subs[k].ans[i]||"").slice(0,1500)})).filter(x=>x.text.trim());
+      rows.forEach((r,k)=>{ if (!String(subs[k].ans[i]||"").trim()) { r.marks[i]=0; r.fb[i]="Not answered"; } });
+      for (let b=0; b<items.length; b+=25) {
+        const batch = items.slice(b,b+25);
+        $("#gradeMsg").textContent = `Marking Q${i+1} for ${items.length} student${items.length>1?"s":""}…`;
+        const j = await aiJSON(GRADE_SYS, JSON.stringify({question:q.q, model_answer:q.answer, max_marks:MARKS.short, answers:batch}));
+        (j.results||[]).forEach(res=>{ const k = /^s\d+$/.test(res.id) ? +res.id.slice(1) : -1; if (rows[k]) { rows[k].marks[i] = Math.max(0, Math.min(MARKS.short, Math.round(+res.marks||0))); rows[k].fb[i] = String(res.feedback||"").slice(0,200); } });
+      }
+    }
+    rows.forEach(r => r.total = r.marks.reduce((a,b)=>a+b,0));
+    S.results = [...S.results, ...rows].sort((a,b)=>String(a.roll).localeCompare(String(b.roll), undefined, {numeric:true}));
+    $("#ansIn").value = "";
+    const skipped = bad.other + bad.broken;
+    $("#gradeMsg").textContent = `Marked ${rows.length} student${rows.length>1?"s":""}.` + (dup ? ` ${dup} repeat submission${dup>1?"s":""} ignored (first answer counts).` : "") + (skipped ? ` ${skipped} message${skipped>1?"s were":" was"} skipped (another lecture, an older quiz, or incomplete).` : "");
+    save(); renderResults();
+  } catch(e) { $("#gradeMsg").textContent = ""; showError(e.message); }
+  grading = false; $("#gradeBtn").disabled = false;
+};
+function renderResults(){
+  const box = $("#results"), rs = S.results || [];
+  if (!rs.length || !S.quiz) { box.innerHTML = ""; return; }
+  const max = quizMax(), n = S.quiz.qs.length, avg = rs.reduce((a,r)=>a+r.total,0)/rs.length;
+  const pct = v => max ? Math.round(v/max*100) : 0;
+  box.innerHTML = `<div class="res-sum"><span>Students <b>${rs.length}</b></span><span>Class average <b>${avg.toFixed(1)} / ${max}</b> (${pct(avg)}%)</span><span>Highest <b>${Math.max(...rs.map(r=>r.total))}</b></span></div>
+    <div class="res-wrap"><table class="res"><thead><tr><th>Roll</th><th>Name</th>${S.quiz.qs.map((q,i)=>`<th class="n">Q${i+1}</th>`).join("")}<th class="n">Total</th><th class="n">%</th></tr></thead><tbody>
+    ${rs.map(r=>`<tr><td>${esc(r.roll)}</td><td>${esc(r.name)}</td>${r.marks.slice(0,n).map((m,i)=>`<td class="n" title="${esc(r.fb[i]||"")}">${m}</td>`).join("")}<td class="n"><b>${r.total}</b></td><td class="n">${pct(r.total)}</td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="small" style="margin-top:6px">1 = correct, 0 = wrong or not answered. Each student's first submission counts.</p>
+    <div class="btns" style="margin-top:8px"><button class="btn" id="resCsv">Download for Excel</button><button class="btn" id="resCopy">Copy table</button><button class="btn danger" id="resClear">Clear scores</button></div>`;
+}
+function resultsTable(sep){
+  const qs = S.quiz.qs, max = quizMax();
+  const head = ["Roll","Name",...qs.map((q,i)=>`Q${i+1} (${MARKS[q.type]})`),`Total (${max})`,"Percent"];
+  const lines = [head, ...S.results.map(r=>[r.roll, r.name, ...r.marks, r.total, max?Math.round(r.total/max*100):0])];
+  const cell = v => sep === "," && /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g,'""')}"` : String(v);
+  return lines.map(l=>l.map(cell).join(sep)).join("\n");
+}
+$("#results").addEventListener("click", e => {
+  const id = e.target.id;
+  if (id === "resCsv") { download(`${slug(S.meta.title)}-${S.meta.date||today()}-quiz-scores.csv`, "﻿"+resultsTable(","), "text/csv"); toast("Scores downloaded. Open the file in Excel."); }
+  else if (id === "resCopy") { const t = resultsTable("\t"); navigator.clipboard.writeText(t).then(()=>toast("Table copied. Paste it into Excel or Google Sheets."), ()=>toast("Could not copy. Use Download for Excel instead.")); }
+  else if (id === "resClear") { if (!twoClickQ("clear", "Click Clear scores again to delete all marks for this quiz.")) return; S.results = []; save(); renderResults(); $("#gradeMsg").textContent = ""; }
+});
+let qConfirm = null;
+function twoClickQ(key, msg){ if (qConfirm === key) { qConfirm = null; return true; } qConfirm = key; setTimeout(()=>{ if (qConfirm===key) qConfirm=null; }, 4000); toast(msg); return false; }
+
 /* ================= rendering ================= */
 function segHTML(s){
   const c = catOf(s), val = s.manual ?? "auto";
@@ -664,9 +889,9 @@ function renderSummary(){
 }
 /* the language each piece of text is written in (AI may have rewritten it in English) */
 const notesSrc = () => S.notesLang || S.meta.lang;
-const srcOf = key => key.startsWith("st:") ? (S.studyLang || notesSrc()) : notesSrc();
+const srcOf = key => key.startsWith("st:") ? (S.studyLang || notesSrc()) : key.startsWith("qz:") ? (S.quizLang || notesSrc()) : notesSrc();
 /* every translatable piece of the lecture as [key, text] */
-const trItems = () => [...S.segs.map(s=>[s.id, s.text]), ...(S.meta.title?[["_title", S.meta.title]]:[]), ...studyItems()];
+const trItems = () => [...S.segs.map(s=>[s.id, s.text]), ...(S.meta.title?[["_title", S.meta.title]]:[]), ...studyItems(), ...quizItems()];
 /* how many current pieces each language already has a translation for */
 const trDone = code => { const t=S.tr[code]||{}; return trItems().filter(([k])=>t[k]!=null).length; };
 function renderTrLangs(){
@@ -681,7 +906,7 @@ function renderTrLangs(){
   if (focused) box.querySelector(`input[value="${focused}"]`)?.focus();
 }
 function renderMeta(){
-  $("#m-lang").innerHTML = LANGS.map(l=>`<option value="${l.code}">${l.name}${l.br?"":" · Bhashini only"}</option>`).join("");
+  $("#m-lang").innerHTML = LANGS.filter(l=>l.br).map(l=>`<option value="${l.code}">${l.name}</option>`).join("");
   document.querySelectorAll("[data-m]").forEach(el=>el.value = S.meta[el.dataset.m] ?? "");
   $("#engine").value = S.engine;
 }
@@ -692,8 +917,8 @@ function renderBh(){
   chip.className = "chip" + (bhCred.ok ? " ok" : "");
 }
 function renderAll(){
-  undoSnap = null; $("#undoBtn").hidden = true; $("#cleanMsg").textContent = ""; $("#studyMsg").textContent = "";
-  renderMeta(); renderNotes(); renderStudy(); renderSummary(); renderBh(); renderAI(); $("#timer").textContent = fmt(S.elapsed);
+  undoSnap = null; $("#undoBtn").hidden = true; $("#cleanMsg").textContent = ""; $("#qzMsg").textContent = ""; $("#gradeMsg").textContent = ""; $("#studyMsg").textContent = "";
+  renderMeta(); renderNotes(); renderStudy(); renderQuiz(); renderResults(); renderSummary(); renderBh(); renderAI(); $("#timer").textContent = fmt(S.elapsed);
   if (typeof renderPublish === "function" && $("#pubRow")) { try { renderPublish(); } catch(e) {} }
 }
 
@@ -728,7 +953,7 @@ function startRec(){
   showError("");
   const eng = S.engine === "bhashini" ? bhashiniEngine : browserEngine;
   if (eng === browserEngine && !L[S.meta.lang].br) {
-    showError(`Browsers can't transcribe ${L[S.meta.lang].name}. Switch the speech engine to Bhashini.`); return;
+    showError(`Browsers can't transcribe ${L[S.meta.lang].name}. Choose another teaching language.`); return;
   }
   activeEngine = eng; eng.start();
 }
@@ -740,7 +965,7 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const browserEngine = {
   rec:null,
   start(){
-    if (!SR){ showError("This browser can't transcribe live. Use Chrome or Edge, or switch the speech engine to Bhashini."); return; }
+    if (!SR){ showError("This browser can't transcribe live. Open Medha in Chrome or Edge, or run the demo."); return; }
     const rec = this.rec = new SR(); rec.lang = L[S.meta.lang].br; rec.continuous = true; rec.interimResults = true;
     rec.onresult = e => { let interim = "";
       for (let i=e.resultIndex; i<e.results.length; i++){ const r=e.results[i]; if (r.isFinal) addSeg(r[0].transcript); else interim += r[0].transcript; }
@@ -748,9 +973,9 @@ const browserEngine = {
     rec.onerror = e => {
       if (e.error === "no-speech" || e.error === "aborted") return;
       const m = {"not-allowed":"Microphone access was blocked. Allow the microphone for this site in the address bar, then press record again.",
-        "service-not-allowed":"The browser's speech service is turned off. Use Chrome or Edge, or switch the speech engine to Bhashini.",
+        "service-not-allowed":"The browser's speech service is turned off. Use Chrome or Edge.",
         "network":"The browser's speech service needs internet. Recording paused; press record when you are back online.",
-        "language-not-supported":"This browser can't transcribe the selected language. Switch the speech engine to Bhashini."}[e.error] || ("Speech recognition stopped: "+e.error);
+        "language-not-supported":"This browser can't transcribe the selected language. Choose English (India) or another language."}[e.error] || ("Speech recognition stopped: "+e.error);
       showError(m); stopRec();
     };
     rec.onend = () => { if (recording && activeEngine===this) { try { rec.start(); } catch(err) { setTimeout(()=>{ try{rec.start()}catch(e2){} },300); } } };
@@ -844,7 +1069,7 @@ let pending = null;
 function confirmInline(what){
   if (pending === what) { pending = null; return true; }
   pending = what; setTimeout(()=>{ if (pending===what) pending=null; }, 4000);
-  toast(what==="new" ? "Click New lecture again to clear these notes." : "Click the demo button again to replace your current notes.");
+  toast(what==="new" ? "Click New lecture again to clear these notes." : what==="quiz" ? "Click Write a new quiz again. It replaces this quiz and clears the scores you have." : "Click the demo button again to replace your current notes.");
   return false;
 }
 function runDemo(){
@@ -860,7 +1085,7 @@ function runDemo(){
     const words = DEMO[line].split(" "); word++;
     $("#interim").textContent = words.slice(0,word).join(" ");
     if (word >= words.length){ addSeg(DEMO[line]); line++; word = 0;
-      if (line >= DEMO.length){ stopDemo(); toast("Demo finished. Try translating it with Bhashini or downloading the student notes."); } }
+      if (line >= DEMO.length){ stopDemo(); toast("Demo finished. Try Clean up with AI, Translate notes, or Download student notes."); } }
   }, 110);
 }
 function stopDemo(){ clearInterval(demoTimer); demoTimer = null; recording = false; S.elapsed = now(); baseElapsed = S.elapsed;
@@ -889,7 +1114,7 @@ document.addEventListener("change", e => {
     if (S.segs.length && Object.keys(S.tr).length) { S.tr = {}; toast("Translations cleared because the notes' language changed."); }
     S.meta.lang = t.value; S.pick = S.pick.filter(c=>c!==t.value); save(); renderSummary();
     if (recording) { stopRec(); startRec(); }
-    else if (!L[t.value].br && S.engine==="browser") { S.engine="bhashini"; $("#engine").value="bhashini"; toast(`${L[t.value].name} needs the Bhashini speech engine; switched.`); }
+    else if (false) { toast(`${L[t.value].name} needs the Bhashini speech engine; switched.`); }
     return;
   }
   if (t.id === "engine") { if (recording) stopRec(); S.engine = t.value; save(); if (t.value==="bhashini" && !bhReady()) $("#bhCard").open = true; return; }
@@ -922,13 +1147,37 @@ $("#bhTest").onclick = async () => {
   renderBh();
 };
 
-/* ================= translation for students ================= */
+/* ================= translation for students =================
+   Two engines: the AI assistant (default) or Bhashini. Either way the translations are
+   stored per line and packed into the student file. */
+let trEngine = "ai";
+try { trEngine = localStorage.getItem("medha-tr-engine") || "ai"; } catch(e) {}
+trEngine = "ai"; $("#trEngine").value = trEngine;
+$("#trEngine").onchange = e => { trEngine = e.target.value; try { localStorage.setItem("medha-tr-engine", trEngine); } catch(err) {} };
+const TR_SYS = (src, tgt) => `You translate engineering lecture notes for undergraduate students in India from ${src} into ${tgt}.
+You receive JSON {"items":[{"id","text"}]}. Return ONLY JSON {"items":[{"id","text"}]} with every input id, in the same order, where text is the translation.
+- Write natural, simple ${tgt} that a first-year student reads easily, in the script normally used to teach ${tgt} in schools.
+- Keep standard technical terms, names of processes, units, symbols and formulas as students know them: keep the English term where that is how it is taught, and you may add the ${tgt} word in brackets once.
+- Keep numbers, formulas and symbols exactly as given. Do not add, drop or explain content.`;
+async function aiTranslate(texts, src, tgt){
+  const out = new Array(texts.length).fill("");
+  for (let i=0; i<texts.length; i+=30){
+    const batch = texts.slice(i, i+30);
+    const j = await aiJSON(TR_SYS(L[src].name, L[tgt].name), `${ctxLine()}\n\n` + JSON.stringify({items:batch.map((t,k)=>({id:"x"+(i+k), text:t}))}));
+    (j.items||[]).forEach(r => { const n = r && /^x\d+$/.test(r.id) ? +r.id.slice(1) : -1; if (n>=i && n<i+batch.length && r.text) out[n] = String(r.text).trim(); });
+  }
+  return out;
+}
 let translating = false;
 $("#trBtn").onclick = async () => {
   if (translating) return;
   if (!S.segs.length) { toast("Record or type some notes first"); return; }
   if (!S.pick.length) { toast("Tick at least one language"); return; }
-  if (!bhReady()) { $("#bhCard").open = true; $("#bhCard").scrollIntoView({behavior:"smooth"}); toast("Connect Bhashini first"); return; }
+  const useAI = trEngine !== "bhashini";
+  if (useAI && !aiReady()) { openCard("#aiCard"); toast("Connect the AI assistant first"); return; }
+  if (!useAI && !bhReady()) { openCard("#bhCard"); toast("Connect Bhashini first, or choose the AI assistant"); return; }
+  const translate = useAI ? aiTranslate : bhTranslate;
+  S.trBy = S.trBy || {};
   translating = true; $("#trBtn").disabled = true; const msg = $("#trMsg"); let done = 0, failed = [];
   outer:
   for (const code of S.pick) {
@@ -942,11 +1191,12 @@ $("#trBtn").onclick = async () => {
     try {
       for (const [src, items] of Object.entries(bySrc)) {
         if (src === code) { items.forEach(([k,v])=>t[k]=v); continue; }
-        const out = await bhTranslate(items.map(i=>i[1]), src, code);
+        const out = await translate(items.map(i=>i[1]), src, code);
         items.forEach(([k],i)=>{ if (out[i]) t[k] = out[i]; });
       }
+      S.trBy[code] = useAI ? "AI" : "Bhashini";
       done++; save(); renderTrLangs();
-    } catch(e) { failed.push(L[code].name+": "+e.message); if (/rejected|reach Bhashini/.test(e.message)) break outer; }
+    } catch(e) { failed.push(L[code].name+": "+e.message); if (/rejected|reach Bhashini|reach the AI|overloaded|usage limit|not found/.test(e.message)) break outer; }
   }
   translating = false; $("#trBtn").disabled = false;
   msg.textContent = failed.length ? "" : `Done. ${done} language${done>1?"s":""} ready in the student file.`;
@@ -1005,13 +1255,27 @@ function studentHTML(){
   Object.entries(S.tr).forEach(([code,t])=>{ const o={}; let n=0; Object.entries(t).forEach(([id,v])=>{ if (keys.has(id)){o[id]=v; if(id!=="_title")n++;} }); if (n) tr[code]=o; });
   const src = notesSrc();
   const data = {lid:S.lid, meta:Object.assign({}, m, {lang:src}), segs:S.segs.map(s=>({id:s.id,t:s.t,text:s.text,manual:s.manual,ai:s.ai,aiDone:s.aiDone})), elapsed:S.elapsed, tr,
-    study:S.study, studyLang:S.studyLang};
+    study:S.study, studyLang:S.studyLang, trBy:S.trBy||{}, quiz:S.quiz, quizLang:S.quizLang, wa:S.quiz?waDigits():""};
   const st = S.study, tt = (key, text, tag="span", cls="") => `<${tag}${cls?` class="${cls}"`:""} data-tr data-id="st:${key}">${esc(text)}</${tag}>`;
   const studyHTML = !st ? "" : `<section class="card study"><h2>Study notes</h2>
     ${st.summary?`<p>${tt("summary", st.summary)}</p>`:""}
     ${st.topics.map((t,i)=>`<h3>${tt(`topics.${i}.heading`, t.heading)}</h3><ul>${t.points.map((p,k)=>`<li>${tt(`topics.${i}.points.${k}`, p)}</li>`).join("")}</ul>`).join("")}
     ${st.formulas.length?`<h3>Formulas</h3><ul>${st.formulas.map((f,i)=>`<li><span class="fx">${esc(f.expr)}</span>${f.meaning?`<br>${tt(`formulas.${i}.meaning`, f.meaning, "span", "muted")}`:""}</li>`).join("")}</ul>`:""}
     ${st.questions.length?`<h3>Revision questions</h3><ol class="qs">${st.questions.map((q,i)=>`<li>${tt(`questions.${i}.q`, q.q)}${q.a?`<details><summary>Show answer</summary>${tt(`questions.${i}.a`, q.a, "p")}</details>`:""}</li>`).join("")}</ol>`:""}
+  </section>`;
+  const qz = S.quiz, qt = (key, text, tag="span", cls="") => `<${tag}${cls?` class="${cls}"`:""} data-tr data-id="qz:${key}">${esc(text)}</${tag}>`;
+  const quizHTML = !qz || !qz.qs.length ? "" : `<section class="card quiz" id="quiz"><h2>Practice quiz</h2>
+    <p class="muted">${qz.qs.length} questions · 1 mark each. You see your score as soon as you submit. You can submit once.</p>
+    <form id="qzForm" novalidate>
+      <div class="who"><input id="qName" placeholder="Your name" autocomplete="name" aria-label="Your name"><input id="qRoll" placeholder="Roll number" autocomplete="off" aria-label="Roll number"></div>
+      <ol class="qz">${qz.qs.map((q,i)=>`<li data-qi="${i}">${qt(`${i}.q`, q.q, "p", "qq")}
+        ${q.type==="mcq" ? q.options.map((o,k)=>`<label class="qopt" data-k="${k}"><input type="radio" name="q${i}" value="${k}">${qt(`${i}.o.${k}`, o)}</label>`).join("") : `<textarea name="q${i}" rows="3" placeholder="Write your answer in any language" aria-label="Answer to question ${i+1}"></textarea>`}
+        
+        <div class="qfb" hidden><b class="qv"></b> ${q.answer?qt(`${i}.a`, q.answer, "span", "qex"):""}</div></li>`).join("")}</ol>
+      <p class="qerr" id="qErr" hidden></p>
+      <button type="submit" class="pri">Submit and see my score</button>
+    </form>
+    <div class="qres" id="qRes" hidden></div>
   </section>`;
   const groups = ORDER.map(k=>[k,S.segs.filter(s=>catOf(s)===k)]).filter(([,a])=>a.length);
   const highlights = groups.map(([k,a])=>`<section class="grp"><h3 class="t-${k}">${CATS[k]}</h3><ul>${a.map(s=>`<li data-tr data-id="${s.id}">${esc(s.text)}</li>`).join("")}</ul></section>`).join("");
@@ -1021,7 +1285,7 @@ function studentHTML(){
   const others = LANGS.filter(l=>!tr[l.code] && l.gt && l.code!==src);
   const srcName = L[src] ? L[src].name : "Original";
   const opts = `<option value="__orig">${esc(srcName)} (original)</option>`
-    + (packed.length?`<optgroup label="Translated by your teacher · works offline">${packed.map(l=>`<option value="${l.code}">${l.name}</option>`).join("")}</optgroup>`:"")
+    + (packed.length?`<optgroup label="Prepared by your teacher · works offline">${packed.map(l=>`<option value="${l.code}">${l.name}</option>`).join("")}</optgroup>`:"")
     + `<optgroup label="Machine translation · needs internet">${others.map(l=>`<option value="g:${l.gt}">${l.name}</option>`).join("")}</optgroup>`;
   return `<!doctype html><html lang="${esc(src)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(m.title||"Lecture notes")}</title>
@@ -1053,21 +1317,40 @@ button{cursor:pointer}
 footer{font-size:13px;color:var(--muted)}
 .study h3{font-size:15px;margin:14px 0 4px}.study ul,.study ol{margin:0;padding-left:22px;display:grid;gap:4px}
 .fx{font-family:ui-monospace,monospace;font-size:15px}.muted{color:var(--muted);font-size:15px}
+a.qlink{color:var(--brand);font-weight:600;text-decoration:none;border:1px solid var(--brand);border-radius:8px;padding:6px 12px;font-size:15px}
+.quiz .who{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 4px}
+.quiz input,.quiz textarea{font:inherit;font-size:16px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);color:var(--ink);width:100%;min-width:0}
+.quiz textarea{resize:vertical}
+ol.qz{margin:12px 0 0;padding-left:22px;display:grid;gap:18px}
+.qq{margin:0 0 6px;font-weight:600}
+.qopt{display:flex;gap:10px;align-items:flex-start;padding:6px 8px;border-radius:8px;cursor:pointer}
+.qopt input{width:auto;margin-top:6px;flex:none}
+.qopt.right{background:var(--hl-formula)}.qopt.wrong{background:var(--hl-exam)}
+.qmk{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+.qfb{margin-top:6px;font-size:15px;color:var(--muted)}.qfb .qv{color:var(--ink)}.qfb.ok .qv{color:var(--tg-formula)}.qfb.no .qv{color:var(--tg-exam)}
+.qerr{color:var(--tg-exam);font-weight:600}
+.quiz button.pri,.qres .pri{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);font-weight:600;margin-top:14px}
+.qres{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;display:grid;gap:10px}
+.qres .score{font:700 20px Sora,system-ui,sans-serif}
+.qres textarea{font:13px/1.4 ui-monospace,monospace;color:var(--muted)}
+.qres .row{display:flex;flex-wrap:wrap;gap:8px}
+.qres a.pri{display:inline-block;text-decoration:none;border-radius:8px;padding:8px 14px;margin:0}
 .qs details{margin:2px 0 6px}.qs summary{cursor:pointer;color:var(--brand);font-size:14px;font-weight:600}.qs details p{margin:4px 0 0;color:var(--muted)}
-@media print{.qs details{display:block}.qs summary{display:none}.bar{display:none}body{background:#fff}.card{border:0;padding:0}}
+@media print{.quiz{display:none}.qlink{display:none}.qs details{display:block}.qs summary{display:none}.bar{display:none}body{background:#fff}.card{border:0;padding:0}}
 </style></head><body><div class="wrap">
 <header><h1 data-tr data-id="_title">${esc(m.title||"Lecture notes")}</h1><p class="meta">${esc(metaLine(m))}${S.elapsed?" · "+fmt(S.elapsed)+" lecture":""}</p></header>
 <div class="bar" role="group" aria-label="Language">
  <label for="lang">Read in</label><select id="lang">${opts}</select>
- <button id="pr">Print or save PDF</button>
- <div id="st" aria-live="polite">${packed.length?"Your teacher translated these notes into "+packed.map(l=>l.name).join(", ")+" with Bhashini.":""}</div><div id="links" hidden></div>
+ <button id="pr">Print or save PDF</button>${quizHTML?'<a class="qlink" href="#quiz">Take the quiz</a>':""}
+ <div id="st" aria-live="polite">${packed.length?"Your teacher has prepared these notes in "+packed.map(l=>l.name).join(", ")+".":""}</div><div id="links" hidden></div>
 </div>
 ${studyHTML}
 ${highlights?`<section class="card"><h2>Highlights</h2>${highlights}</section>`:""}
 <section class="card"><h2>Full lecture notes</h2>
 <div class="legend"><span><i class="h-exam"></i>Exam tip</span><span><i class="h-def"></i>Definition</span><span><i class="h-formula"></i>Formula</span><span><i class="h-key"></i>Key point</span></div>
 ${notes}</section>
-<footer>Notes recorded in class and reviewed by the teacher, made with Medha. Translations by Bhashini (MeitY, Govt. of India) or machine translation can get technical terms wrong; switch back to the original when in doubt.</footer>
+${quizHTML}
+<footer>Notes recorded in class and reviewed by the teacher, made with Medha. Machine translation can get technical terms wrong; switch back to the original when in doubt.</footer>
 </div>
 <script type="application/json" id="cs-data">${json}<\/script>
 <script>
@@ -1092,7 +1375,7 @@ ${notes}</section>
  sel.onchange=async function(){
   var v=sel.value,my=++run;links.hidden=true;
   if(v==="__orig"){original();st.textContent=intro;return;}
-  if(v.indexOf("g:")!==0){var t=D.tr[v]||{};els.forEach(function(e){e.textContent=t[e.dataset.id]||e.dataset.orig;});document.documentElement.lang=v;st.textContent="Translated by your teacher with Bhashini.";return;}
+  if(v.indexOf("g:")!==0){var t=D.tr[v]||{};els.forEach(function(e){e.textContent=t[e.dataset.id]||e.dataset.orig;});document.documentElement.lang=v;st.textContent=(D.trBy&&D.trBy[v]==="Bhashini"?"Translated with Bhashini (MeitY).":"Machine-translated with AI.")+" Technical terms may need checking against the original.";return;}
   var tl=v.slice(2);original();
   if("Translator" in self){
    try{
@@ -1112,8 +1395,66 @@ ${notes}</section>
  };
  document.getElementById("pr").onclick=function(){window.print();};
 })();
-<\/script></body></html>`;
+<\/script>${quizHTML?`<script>${QUIZ_JS}<\/script>`:""}</body></html>`;
 }
+
+/* script that runs inside the student file to show and submit the quiz */
+const QUIZ_JS = String.raw`
+(function(){
+ var D=JSON.parse(document.getElementById("cs-data").textContent), Q=D.quiz;
+ if(!Q||!Q.qs||!Q.qs.length)return;
+ var form=document.getElementById("qzForm"), res=document.getElementById("qRes"), err=document.getElementById("qErr");
+ var nameEl=document.getElementById("qName"), rollEl=document.getElementById("qRoll"), key="medha-quiz-"+D.lid+"-"+Q.id;
+ function val(i){
+  if(Q.qs[i].type==="mcq"){var c=form.querySelector('input[name="q'+i+'"]:checked');return c?+c.value:null;}
+  var t=form.querySelector('textarea[name="q'+i+'"]');return t?t.value.trim():"";
+ }
+ function enc(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o))));}
+ function store(){try{localStorage.setItem(key,JSON.stringify({name:nameEl.value,roll:rollEl.value,ans:Q.qs.map(function(q,i){return val(i);})}));}catch(e){}}
+ try{var dr=JSON.parse(localStorage.getItem(key)||"null");
+  if(dr){nameEl.value=dr.name||"";rollEl.value=dr.roll||"";(dr.ans||[]).forEach(function(a,i){
+   if(!Q.qs[i])return;
+   if(Q.qs[i].type==="mcq"){if(a!==null){var r=form.querySelector('input[name="q'+i+'"][value="'+a+'"]');if(r)r.checked=true;}}
+   else{var t=form.querySelector('textarea[name="q'+i+'"]');if(t)t.value=a||"";}
+  });}
+ }catch(e){}
+ form.addEventListener("input",store);form.addEventListener("change",store);
+ form.onsubmit=function(e){
+  e.preventDefault();
+  var name=nameEl.value.trim(), roll=rollEl.value.trim();
+  if(!name||!roll){err.textContent="Enter your name and roll number so your teacher knows whose answers these are.";err.hidden=false;(name?rollEl:nameEl).focus();return;}
+  err.hidden=true;
+  var ans=Q.qs.map(function(q,i){return val(i);}), got=0, tot=0, shortN=0;
+  Q.qs.forEach(function(q,i){
+   var li=form.querySelector('[data-qi="'+i+'"]'), fb=li.querySelector(".qfb"), v=fb.querySelector(".qv");
+   fb.hidden=false;
+   if(q.type==="mcq"){
+    tot++;var ok=ans[i]===q.correct;if(ok)got++;
+    fb.className="qfb "+(ok?"ok":"no");v.textContent=ok?"Correct.":(ans[i]===null?"Not answered.":"Not quite.");
+    [].forEach.call(li.querySelectorAll(".qopt"),function(l){var k=+l.getAttribute("data-k");l.classList.toggle("right",k===q.correct);l.classList.toggle("wrong",k===ans[i]&&!ok);});
+   }else{shortN++;fb.className="qfb";v.textContent="Your teacher will mark this. Model answer:";}
+  });
+  var msg="Medha quiz result\n"+(D.meta&&D.meta.title||"Lecture")+"\n"+name+" (Roll "+roll+")\nScore: "+got+"/"+tot+"\n#MEDHA:"+enc({v:1,lid:D.lid,qid:Q.id,name:name,roll:roll,ans:ans})+"#";
+  res.innerHTML="";
+  var sc=document.createElement("div");sc.className="score";sc.textContent="Your score: "+got+" / "+tot;res.appendChild(sc);
+  var p=document.createElement("p");p.style.margin="0";p.textContent=(got===tot?"Excellent, all correct! ":"Read the explanations above to see where you went wrong. ")+"Send your result to your teacher.";res.appendChild(p);
+  var row=document.createElement("div");row.className="row";
+  if(D.wa){var a=document.createElement("a");a.className="pri";a.target="_blank";a.rel="noopener";a.href="https://wa.me/"+D.wa+"?text="+encodeURIComponent(msg);a.textContent="Send result to teacher on WhatsApp";row.appendChild(a);}
+  var b=document.createElement("button");b.type="button";b.textContent="Copy my result";row.appendChild(b);res.appendChild(row);
+  var ta=document.createElement("textarea");ta.readOnly=true;ta.rows=5;ta.value=msg;ta.setAttribute("aria-label","Your answers message");res.appendChild(ta);
+  b.onclick=function(){
+   function sel(){ta.focus();ta.select();try{document.execCommand("copy");b.textContent="Copied";}catch(x){b.textContent="Select the text below and copy it";}}
+   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(msg).then(function(){b.textContent="Copied. Paste it to your teacher.";},sel);}else sel();
+  };
+  res.hidden=false;
+  [].forEach.call(form.querySelectorAll("input,textarea,button"),function(x){x.disabled=true;});
+  form.querySelector("button[type=submit]").textContent="Submitted";
+  try{localStorage.setItem(key,JSON.stringify({name:name,roll:roll,ans:ans,done:true}));}catch(x){}
+  if(!e.restore)res.scrollIntoView({behavior:"smooth",block:"start"});
+ };
+ try{var dn=JSON.parse(localStorage.getItem(key)||"null");if(dn&&dn.done)form.onsubmit({preventDefault:function(){},restore:true});}catch(x){}
+})();
+`;
 
 /* ================= classes, sign-in and approval (Supabase) =================
    Who may see what is enforced by the database's row-level security (supabase-setup.sql);
@@ -1136,7 +1477,10 @@ const dateLabel = d => { try { return new Date(d).toLocaleDateString(undefined,{
 let confirmKey = null;
 function twoClick(key, msg){ if (confirmKey === key) { confirmKey = null; return true; } confirmKey = key; setTimeout(()=>{ if (confirmKey===key) confirmKey=null; }, 4000); toast(msg); return false; }
 
+const CLASSES_ON = CFG.enableClasses === true;
 function initCloud(){
+  if (!CLASSES_ON) { setView("record"); return; }
+  $("#tab-classes").hidden = false; $("#pubBlock").hidden = false;
   if (CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase && window.supabase.createClient) {
     sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true}});
     sb.auth.onAuthStateChange((ev, session) => { const u = session && session.user || null; if ((u&&u.id) !== (me&&me.id)) { me = u; onUser(); } });
@@ -1379,8 +1723,23 @@ function readJoinLink(){
   const m = location.hash.match(/^#join=([A-Za-z0-9]{4,10})$/);
   let code = m && m[1].toUpperCase();
   try { if (code) sessionStorage.setItem("medha-join", code); else code = sessionStorage.getItem("medha-join"); } catch(e) {}
-  if (code) { $("#j-code").value = code; setView("classes"); if (m) history.replaceState(null, "", location.pathname); }
+  if (code && CLASSES_ON) { $("#j-code").value = code; setView("classes"); if (m) history.replaceState(null, "", location.pathname); }
   return !!code;
+}
+
+/* ================= installable app ================= */
+let installEvt = null;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; $("#installBtn").hidden = false; });
+$("#installBtn").onclick = async () => {
+  if (!installEvt) return;
+  installEvt.prompt();
+  const r = await installEvt.userChoice.catch(()=>null);
+  installEvt = null; $("#installBtn").hidden = true;
+  if (r && r.outcome === "accepted") toast("Medha is being added to your home screen");
+};
+window.addEventListener("appinstalled", () => { $("#installBtn").hidden = true; toast("Medha installed. Open it from your home screen."); });
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
 }
 
 /* ================= boot ================= */
@@ -1388,7 +1747,7 @@ function readJoinLink(){
 readJoinLink();
 initCloud();
 renderAll();
-if (!SR && S.engine === "browser") showError("Live transcription with the browser engine needs Chrome or Edge. In other browsers, switch the speech engine to Bhashini, or run the demo.");
+if (!SR && S.engine === "browser") showError("Live transcription with the browser engine needs Chrome or Edge. In other browsers you can still run the demo.");
 if (S.segs.length) { baseElapsed = S.elapsed; setRecUI(false, "Draft restored · review or continue"); $("#interim").textContent = "Your last lecture was restored from this browser."; }
 window.addEventListener("beforeunload", e => { if (recording) { e.preventDefault(); e.returnValue = ""; } });
 </script>
