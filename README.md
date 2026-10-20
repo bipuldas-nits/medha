@@ -105,6 +105,10 @@ The free Supabase plan is enough for a pilot. Free projects pause after 7 days w
 - Diagram and board-photo attachments per lecture
 - A course archive that groups lectures by subject
 
+## Access
+
+Medha is available only to teachers approved by the author. Each approved teacher receives a personal access code, which Medha asks for once per device. Students do not need a code: the notes files they receive always open.
+
 ## License
 
-MIT © 2026 Bipul Das
+Copyright © 2026 Dr. Bipul Das. All rights reserved. No part of Medha may be copied, modified, redistributed or hosted without written permission. See `LICENSE`.

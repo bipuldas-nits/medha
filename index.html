@@ -159,6 +159,13 @@ table.res td.n{text-align:right;font-family:var(--mono);font-variant-numeric:tab
 table.res tr:last-child td{border-bottom:0}
 .res-sum{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted);margin-top:8px}
 .res-sum b{color:var(--ink);font-family:var(--mono)}
+.gate{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;padding:20px 16px;overflow:auto}
+.gate-box{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:grid;gap:14px}
+.gate-box h2{font:800 24px var(--display);margin:0;display:flex;align-items:center;gap:10px}
+.gate-box .dev{font:600 18px "Noto Sans Devanagari",var(--body);color:var(--brand)}
+.gate-box input{font:600 18px var(--mono);letter-spacing:.08em;text-transform:uppercase;text-align:center;padding:12px}
+.gate-err{color:var(--rec);font-size:14px;font-weight:600;margin:0}
+.gate-contact{font-size:13px;color:var(--muted);margin:0;user-select:all}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;z-index:5;max-width:90vw}
 footer{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between}
 @media (max-width:860px){.main{grid-template-columns:1fr}aside{position:static}}
@@ -337,6 +344,16 @@ footer{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px;jus
 <div class="reader" id="reader" hidden>
   <div class="reader-bar"><b id="readerTitle"></b><button class="btn" id="readerClose">Close</button></div>
   <iframe id="readerFrame" title="Lecture notes" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
+</div>
+<div class="gate" id="gate" hidden role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+  <form class="gate-box" id="gateForm" novalidate>
+    <h2 id="gateTitle">Medha <span class="dev" lang="sa">मेधा</span></h2>
+    <p class="hint" id="gateMsg">Medha is available to approved teachers. Enter the access code you received.</p>
+    <input id="gateCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MEDHA-XXXX-XXXX" aria-label="Access code" maxlength="20">
+    <p class="gate-err" id="gateErr" hidden></p>
+    <button class="btn pri" type="submit">Continue</button>
+    <p class="gate-contact" id="gateContact"></p>
+  </form>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -1745,9 +1762,12 @@ function readJoinLink(){
 
 /* ================= installable app ================= */
 let installEvt = null;
-window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; $("#installBtn").hidden = false; });
+const runningAsApp = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+/* show the button whenever Medha is open in a normal browser tab; inside the installed app it is not needed */
+if (/^https?:$/.test(location.protocol) && !runningAsApp()) $("#installBtn").hidden = false;
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; if (!runningAsApp()) $("#installBtn").hidden = false; });
 $("#installBtn").onclick = async () => {
-  if (!installEvt) return;
+  if (!installEvt) { toast("To install: open Chrome's ⋮ menu and tap Install app (or Add to Home screen). If Medha is already installed, open it from your home screen."); return; }
   installEvt.prompt();
   const r = await installEvt.userChoice.catch(()=>null);
   installEvt = null; $("#installBtn").hidden = true;
@@ -1755,8 +1775,46 @@ $("#installBtn").onclick = async () => {
 };
 window.addEventListener("appinstalled", () => { $("#installBtn").hidden = true; toast("Medha installed. Open it from your home screen."); });
 if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js", {updateViaCache: "none"}).then(r => r.update()).catch(()=>{}));
+  /* when a new version takes over, reload once so the latest Medha is on screen */
+  let swReloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (swReloaded || recording) return; swReloaded = true; location.reload(); });
 }
+
+/* ================= access codes =================
+   Only teachers holding a code that the owner has approved can use Medha. config.js lists the
+   SHA-256 fingerprints of approved codes, so the codes themselves never appear on the site.
+   Removing a fingerprint from config.js blocks that code the next time Medha opens online. */
+const ACCESS = (CFG && CFG.access) || {};
+const ACCESS_KEY = "medha-access-code";
+async function codeHash(code){
+  const data = new TextEncoder().encode("medha-access-v1:" + code);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
+}
+const tidyCode = c => String(c||"").toUpperCase().replace(/[^A-Z0-9]/g,"").replace(/^MEDHA/,"").replace(/^(.{4})(.{4})$/,"MEDHA-$1-$2");
+async function codeOK(code){ try { return (ACCESS.codes||[]).includes(await codeHash(tidyCode(code))); } catch(e) { return false; } }
+function showGate(msg){
+  $("#gateContact").textContent = ACCESS.contact ? "No code? Contact " + ACCESS.contact : "";
+  if (msg) $("#gateMsg").textContent = msg;
+  $("#gate").hidden = false; document.body.style.overflow = "hidden"; setTimeout(()=>$("#gateCode").focus(), 50);
+}
+async function checkAccess(){
+  if (!ACCESS.required) return;
+  let saved = ""; try { saved = localStorage.getItem(ACCESS_KEY) || ""; } catch(e) {}
+  if (saved && await codeOK(saved)) return;
+  if (saved) { try { localStorage.removeItem(ACCESS_KEY); } catch(e) {} showGate("This access code is no longer active. Contact the owner of Medha for a new one."); }
+  else showGate();
+}
+$("#gateForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const code = tidyCode($("#gateCode").value), err = $("#gateErr");
+  if (!/^MEDHA-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) { err.textContent = "Enter the full code, for example MEDHA-7KQ4-X9PM."; err.hidden = false; return; }
+  if (!(await codeOK(code))) { err.textContent = "That code is not valid. Check it, or contact the owner of Medha."; err.hidden = false; return; }
+  try { localStorage.setItem(ACCESS_KEY, code); } catch(x) {}
+  err.hidden = true; $("#gate").hidden = true; document.body.style.overflow = ""; toast("Welcome to Medha");
+});
+checkAccess();
 
 /* ================= boot ================= */
 { let v = "record"; try { v = localStorage.getItem("medha-view") || "record"; } catch(e) {} setView(v === "classes" ? "classes" : "record"); }
