@@ -505,7 +505,7 @@ const outLangCode = () => aiCfg.out === "en" ? "en" : S.meta.lang;
 const GEMINI_FALLBACK = "gemini-3.1-flash-lite";
 const BUSY = new Set([500, 502, 503, 504, 529]);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-function aiStatus(t){ ["#cleanMsg","#studyMsg","#aiMsg","#qzMsg","#gradeMsg"].forEach(id=>{ const el=$(id); if (el && /…$/.test(el.textContent)) el.textContent = t; }); }
+function aiStatus(t){ ["#cleanMsg","#studyMsg","#aiMsg","#qzMsg","#gradeMsg","#trMsg"].forEach(id=>{ const el=$(id); if (el && /…$/.test(el.textContent)) el.textContent = t; }); }
 async function aiFetch(system, user, model){
   if (aiCfg.prov === "claude") {
     return fetch("https://api.anthropic.com/v1/messages", {method:"POST",
@@ -523,6 +523,8 @@ async function aiCall(system, user){
   const plan = [[aiModel(),0],[aiModel(),3000],[aiModel(),8000]];
   if (aiCfg.prov === "gemini" && aiModel() !== GEMINI_FALLBACK) plan.push([GEMINI_FALLBACK,2000]);
   let res, j = null, model = aiModel(), busy = false;
+  for (let rl=0; ; rl++) {
+  model = aiModel(); busy = false;
   for (let i=0; i<plan.length; i++) {
     const [m, wait] = plan[i];
     if (wait) { aiStatus(m === model ? "The AI service is busy. Trying again…" : "Still busy. Switching to a lighter AI model…"); await sleep(wait); }
@@ -532,11 +534,25 @@ async function aiCall(system, user){
     busy = BUSY.has(res.status) || (m !== model && !res.ok);   // a failed fallback still means "busy"
     if (!busy) { model = m; break; }
   }
+  /* free-tier "slow down" (429): wait as long as the service asks, up to three times */
+  if (!busy && res.status === 429 && rl < 3) {
+    const det = (j && j.error && j.error.details) || [];
+    const perDay = /PerDay|per day|daily/i.test(JSON.stringify(det) + " " + ((j && j.error && j.error.message) || ""));
+    if (perDay) throw new Error("Today's free AI limit on this Gemini key is used up. It resets around midday (12:30–1:30 PM IST). Meanwhile you can try the lighter model: type gemini-3.1-flash-lite under AI assistant → Model.");
+    const ri = det.find(d => d && d.retryDelay); let secs = ri ? parseFloat(ri.retryDelay) : 0;
+    if (!secs) { const ra = +res.headers.get("retry-after"); secs = ra || 20 * (rl + 1); }
+    secs = Math.min(Math.max(Math.ceil(secs), 5), 65);
+    aiStatus(`Free AI limit for this minute reached. Waiting ${secs} seconds, then continuing…`);
+    await sleep(secs * 1000);
+    continue;
+  }
+  break;
+  }
   if (busy) throw new Error("The AI service is overloaded right now (this is on Google's or Anthropic's side). Please try again in a few minutes.");
   if (!res.ok) {
     const m = j && j.error && (j.error.message || j.error.type) || res.statusText;
     if (res.status === 401 || res.status === 403 || /api key/i.test(m||"")) throw new Error("The AI service rejected the API key. Check it under AI assistant.");
-    if (res.status === 429) throw new Error("The AI service's usage limit was reached. Wait a minute and try again.");
+    if (res.status === 429) throw new Error("The free AI limit was reached even after waiting. Wait a few minutes and click the button again; Medha continues where it stopped.");
     if (res.status === 404) throw new Error(`Model "${model}" was not found. Check the model name under AI assistant.`);
     if (BUSY.has(res.status)) throw new Error("The AI service is overloaded right now (this is on Google's or Anthropic's side). Please try again in a few minutes.");
     throw new Error("AI error " + res.status + ": " + m);
@@ -1161,8 +1177,8 @@ You receive JSON {"items":[{"id","text"}]}. Return ONLY JSON {"items":[{"id","te
 - Keep numbers, formulas and symbols exactly as given. Do not add, drop or explain content.`;
 async function aiTranslate(texts, src, tgt){
   const out = new Array(texts.length).fill("");
-  for (let i=0; i<texts.length; i+=30){
-    const batch = texts.slice(i, i+30);
+  for (let i=0; i<texts.length; i+=60){
+    const batch = texts.slice(i, i+60);
     const j = await aiJSON(TR_SYS(L[src].name, L[tgt].name), `${ctxLine()}\n\n` + JSON.stringify({items:batch.map((t,k)=>({id:"x"+(i+k), text:t}))}));
     (j.items||[]).forEach(r => { const n = r && /^x\d+$/.test(r.id) ? +r.id.slice(1) : -1; if (n>=i && n<i+batch.length && r.text) out[n] = String(r.text).trim(); });
   }
