@@ -1,0 +1,1396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Medha</title>
+<meta name="description" content="Medha (Multilingual Education through Dictation, Highlights &amp; AI): live lecture note-taker for teachers. Transcribes the class, highlights key points, and translates notes into Indian languages with Bhashini.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Noto+Sans:wght@400;600;700&family=Noto+Sans+Devanagari:wght@600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: lecture details + engine on top, recorder strip, then notes (wide) beside a sticky highlights/share column. */
+:root{
+  --bg:#f3f6f7; --surface:#ffffff; --ink:#14212b; --muted:#5a6a76; --line:#d8e0e5;
+  --brand:#0e6a70; --brand-ink:#ffffff; --rec:#d1352c; --ok:#1b6a3c;
+  --hl-key:#fff0a3; --hl-def:#dcebff; --hl-formula:#d9f2e2; --hl-exam:#ffe0e7;
+  --tg-key:#6f5300; --tg-def:#1c4c8c; --tg-formula:#1b6a3c; --tg-exam:#9d1f3d;
+  --display:"Sora",system-ui,sans-serif; --body:"Noto Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0d1418; --surface:#141e24; --ink:#e3ebef; --muted:#93a4ae; --line:#26343c;
+  --brand:#38b3b9; --brand-ink:#04191b; --rec:#f0645b; --ok:#86dca6;
+  --hl-key:#4a3e08; --hl-def:#15304e; --hl-formula:#163a25; --hl-exam:#4a1826;
+  --tg-key:#f3d25e; --tg-def:#9cc3ff; --tg-formula:#86dca6; --tg-exam:#ff9fb4; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--body)}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 56px;display:grid;gap:18px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:38px;height:38px;border-radius:10px;background:var(--brand);display:grid;place-items:center}
+.brand h1{font:800 26px/1 var(--display);margin:0;letter-spacing:-.02em}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.brand .dev{font:600 20px "Noto Sans Devanagari",var(--body);color:var(--brand);margin-left:4px;letter-spacing:0}
+.brand .acr{color:var(--brand);font-weight:700}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:600 14px var(--body);border-radius:8px;padding:8px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.danger{color:var(--rec)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,[contenteditable]:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label.f{display:grid;gap:4px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+input,select{font:inherit;font-size:15px;text-transform:none;letter-spacing:0;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+input[type=checkbox]{width:auto}
+.banner{border-radius:10px;padding:10px 14px;font-size:14px;background:var(--hl-exam);color:var(--tg-exam)}
+details.card summary{cursor:pointer;font:700 16px var(--display);list-style:none;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+details.card summary::-webkit-details-marker{display:none}
+details.card summary>span:first-child::before{content:"▸";margin-right:8px;color:var(--muted)}
+details[open].card summary>span:first-child::before{content:"▾"}
+.bh-body{display:grid;gap:12px;margin-top:12px}
+.chip{font:600 12px var(--body);padding:2px 10px;border-radius:99px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.chip.ok{color:var(--ok);border-color:currentColor}
+.chip.bad{color:var(--rec);border-color:currentColor}
+.small{font-size:13px;color:var(--muted);margin:0}
+.small a{color:var(--brand)}
+.recorder{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center}
+.recbtn{width:72px;height:72px;border-radius:50%;border:0;background:var(--rec);color:#fff;cursor:pointer;display:grid;place-items:center;transition:transform .15s}
+.recbtn:hover{transform:scale(1.04)}
+.recbtn .sq{width:22px;height:22px;border-radius:5px;background:#fff}
+.recbtn .dot{width:24px;height:24px;border-radius:50%;background:#fff}
+.recbtn.on{animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--rec) 55%,transparent)}100%{box-shadow:0 0 0 18px transparent}}
+.status{display:grid;gap:2px;min-width:0}
+.status b{font:700 18px var(--display)}
+.interim{color:var(--muted);font-style:italic;min-height:1.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stats{display:flex;gap:18px;font:500 14px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.stats b{display:block;font-size:22px;color:var(--ink)}
+.main{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:18px;align-items:start}
+h2{font:700 18px var(--display);margin:0}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.hint{color:var(--muted);font-size:14px;margin:0}
+.notes{display:grid;gap:6px}
+.seg{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:10px;align-items:start;padding:8px 10px;border-radius:8px;border:1px solid transparent}
+.seg:hover{border-color:var(--line)}
+.seg.flash{border-color:var(--brand)}
+.ts{font:500 12px/1.9 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.txt{outline:none;min-width:0;overflow-wrap:anywhere;padding:1px 4px;border-radius:4px}
+.seg.c-key .txt{background:var(--hl-key)}
+.seg.c-def .txt{background:var(--hl-def)}
+.seg.c-formula .txt{background:var(--hl-formula)}
+.seg.c-exam .txt{background:var(--hl-exam)}
+.seg-act{display:flex;gap:4px;align-items:center}
+.seg-act select{width:auto;font-size:12px;padding:3px 6px}
+.x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:6px}
+.x:hover{color:var(--rec)}
+.empty{color:var(--muted);text-align:center;padding:32px 12px;border:1px dashed var(--line);border-radius:10px}
+aside{position:sticky;top:12px;display:grid;gap:14px}
+.grp h3{font:700 12px var(--body);letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px;display:flex;align-items:center;gap:8px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.grp ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.grp li button{all:unset;cursor:pointer;display:block;font-size:14px;line-height:1.45;padding:4px 6px;border-radius:6px}
+.grp li button:hover,.grp li button:focus-visible{background:var(--bg)}
+.share{display:grid;gap:12px}
+.share h3{font:700 14px var(--display);margin:0}
+.langs{display:flex;flex-wrap:wrap;gap:6px}
+.langs label{display:flex;gap:6px;align-items:center;font-size:13px;padding:4px 10px;border:1px solid var(--line);border-radius:99px;cursor:pointer;background:var(--bg)}
+.langs label:has(input:checked){border-color:var(--brand);color:var(--brand);font-weight:600}
+.langs label .n{font:500 11px var(--mono);color:var(--ok)}
+.divider{border:0;border-top:1px solid var(--line);margin:2px 0}
+.ai-badge{display:inline-block;margin-top:2px;font:600 10px var(--mono);letter-spacing:.04em;color:var(--brand);border:1px solid currentColor;border-radius:4px;padding:0 4px}
+.ai-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.study{display:grid;gap:14px}
+.study h3{font:700 12px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.study ul,.study ol{margin:0;padding-left:20px;display:grid;gap:4px;font-size:14px}
+.study [contenteditable]{outline:none;border-radius:4px;padding:0 2px}
+.study [contenteditable]:hover{background:var(--bg)}
+.study .topic b{display:block;font-size:14px;margin-bottom:2px}
+.study .formula{font-family:var(--mono);font-size:13px}
+.study .ans{color:var(--muted)}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);overflow-x:auto}
+.tabs button{font:700 15px var(--display);background:none;border:0;padding:10px 14px;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--brand)}
+.badge{display:inline-block;min-width:20px;padding:0 6px;border-radius:99px;background:var(--rec);color:#fff;font:700 12px/20px var(--body);text-align:center;margin-left:4px}
+.view{display:grid;gap:18px}
+.acct{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px;color:var(--muted)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:18px;align-items:start}
+.cls-list{display:grid;gap:16px}
+.cls{display:grid;gap:10px;padding-top:14px;border-top:1px solid var(--line)}
+.cls-h{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center}
+.cls-h h3{font:700 16px var(--display);margin:0}
+.code{font:600 16px var(--mono);letter-spacing:.14em;padding:3px 10px;border:1px dashed var(--muted);border-radius:8px}
+.sub{font:700 12px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:4px 0 0}
+.rows{display:grid;gap:6px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.row .who{display:grid;min-width:0;font-size:14px}.row .who small{color:var(--muted);overflow-wrap:anywhere}
+.row .btn{padding:5px 10px;font-size:13px}
+.pill{font:600 12px var(--body);padding:2px 10px;border-radius:99px;white-space:nowrap}
+.pill.pending{background:var(--hl-key);color:var(--tg-key)}.pill.approved{background:var(--hl-formula);color:var(--tg-formula)}.pill.removed{background:var(--hl-exam);color:var(--tg-exam)}
+.reader{position:fixed;inset:0;background:var(--bg);z-index:20;display:grid;grid-template-rows:auto 1fr}
+.reader-bar{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+.reader-bar b{font:700 16px var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reader iframe{border:0;width:100%;height:100%;background:var(--bg)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;z-index:5;max-width:90vw}
+footer{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between}
+@media (max-width:860px){.main{grid-template-columns:1fr}aside{position:static}}
+@media (max-width:560px){.recorder{grid-template-columns:auto 1fr}.stats{grid-column:1/-1}.seg{grid-template-columns:44px minmax(0,1fr)}.seg-act{grid-column:2}}
+@media (prefers-reduced-motion:reduce){.recbtn.on{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand-ink)" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+      <div><h1>Medha <span class="dev" lang="sa">मेधा</span></h1><p><b class="acr">M</b>ultilingual <b class="acr">E</b>ducation through <b class="acr">D</b>ictation, <b class="acr">H</b>ighlights &amp; <b class="acr">A</b>I</p></div>
+    </div>
+    <div class="acct" id="acct"></div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-view="record" id="tab-record">Record &amp; edit</button>
+    <button role="tab" data-view="classes" id="tab-classes">Classes<span class="badge" id="pendBadge" hidden></span></button>
+  </nav>
+
+  <div class="banner" id="errBanner" hidden></div>
+
+  <div id="view-record" class="view" role="tabpanel" aria-labelledby="tab-record">
+    <div class="btns">
+      <button class="btn" id="demoBtn">Try a demo lecture</button>
+      <button class="btn" id="openBtn">Open saved notes</button>
+      <button class="btn danger" id="newBtn">New lecture</button>
+      <input type="file" id="fileIn" accept=".json,.html" hidden>
+    </div>
+
+  <section class="card meta" aria-label="Lecture details">
+    <label class="f">Lecture title<input id="m-title" data-m="title" placeholder="e.g. Friction stir welding: process basics"></label>
+    <label class="f">Course<input id="m-course" data-m="course" placeholder="e.g. ME 31001 Machining Technology"></label>
+    <label class="f">Teacher<input id="m-teacher" data-m="teacher" placeholder="Your name"></label>
+    <label class="f">Date<input id="m-date" data-m="date" type="date"></label>
+    <label class="f">Teaching language<select id="m-lang" data-m="lang"></select></label>
+    <label class="f">Speech engine<select id="engine"><option value="browser">Browser (Chrome / Edge)</option><option value="bhashini">Bhashini (Govt. of India)</option></select></label>
+  </section>
+
+  <details class="card" id="bhCard">
+    <summary><span>Bhashini connection</span><span class="chip" id="bhChip">Not connected</span></summary>
+    <div class="bh-body">
+      <p class="small">Bhashini is the Government of India's National Language Translation Mission. It powers translation of your notes into 22 Indian languages and speech recognition for languages browsers can't handle, such as Bodo and Manipuri. Get a free User ID and ULCA API key by signing up at <a href="https://bhashini.gov.in/ulca" target="_blank" rel="noopener">bhashini.gov.in/ulca</a>, then open <i>My Profile</i>.</p>
+      <div class="meta">
+        <label class="f">User ID<input id="bh-user" autocomplete="off" spellcheck="false"></label>
+        <label class="f">ULCA API key<input id="bh-key" type="password" autocomplete="off" spellcheck="false"></label>
+      </div>
+      <div class="btns">
+        <button class="btn pri" id="bhTest">Save and test</button>
+        <label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="bh-remember" checked>Remember on this device</label>
+      </div>
+      <p class="small" id="bhMsg">Your key stays in this browser. It is never put into the files you share with students.</p>
+    </div>
+  </details>
+
+  <details class="card" id="aiCard">
+    <summary><span>AI assistant</span><span class="chip" id="aiChip">Not connected</span></summary>
+    <div class="bh-body">
+      <p class="small">AI cleans the transcript (misheard technical terms, punctuation, formulas, mixed-language speech), picks the important points, and writes topic-wise study notes with revision questions. Use Google Gemini with a free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>, or Anthropic Claude with a key from <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
+      <div class="meta">
+        <label class="f">Provider<select id="ai-prov"><option value="gemini">Google Gemini (free tier)</option><option value="claude">Anthropic Claude</option></select></label>
+        <label class="f">API key<input id="ai-key" type="password" autocomplete="off" spellcheck="false"></label>
+        <label class="f">Model<input id="ai-model" autocomplete="off" spellcheck="false"></label>
+        <label class="f">Write cleaned notes in<select id="ai-out"><option value="same">Same as teaching language</option><option value="en">English</option></select></label>
+      </div>
+      <div class="btns"><button class="btn pri" id="aiTest">Save and test</button></div>
+      <p class="small" id="aiMsg">The key stays in this browser and never goes into files you share. On Gemini's free tier, Google may use the text sent to improve its products.</p>
+    </div>
+  </details>
+
+  <section class="card recorder" aria-label="Recorder">
+    <button class="recbtn" id="recBtn" aria-label="Start recording"><span class="dot"></span></button>
+    <div class="status"><b id="stLabel">Ready to record</b><span class="interim" id="interim">Press the red button when the class starts. Keep this tab open.</span></div>
+    <div class="stats"><span><b id="timer">00:00</b>duration</span><span><b id="wc">0</b>words</span><span><b id="hc">0</b>highlights</span></div>
+  </section>
+
+  <div class="main">
+    <section class="card" aria-label="Lecture notes">
+      <div class="sec-h"><h2>Lecture notes</h2><p class="hint">Click any line to correct it. Use the menu to change its highlight.</p></div>
+      <div class="ai-row"><button class="btn pri" id="cleanBtn">Clean up with AI</button><button class="btn" id="undoBtn" hidden>Undo AI clean-up</button><span class="small" id="cleanMsg"></span></div>
+      <div class="notes" id="notes"></div>
+    </section>
+    <aside>
+      <section class="card" aria-label="Highlights">
+        <div class="sec-h"><h2>Highlights</h2><p class="hint">Picked automatically</p></div>
+        <div id="summary" style="display:grid;gap:14px"></div>
+      </section>
+      <section class="card" aria-label="Study notes">
+        <div class="sec-h"><h2>Study notes</h2><p class="hint">Written by AI from the lecture</p></div>
+        <div class="btns" style="margin-bottom:10px"><button class="btn" id="studyBtn">Generate study notes</button><span class="small" id="studyMsg"></span></div>
+        <div class="study" id="study"></div>
+      </section>
+      <section class="card share" aria-label="Share">
+        <h2>Share with students</h2>
+        <h3>1 · Translate with Bhashini</h3>
+        <p class="small">Pick the languages your class speaks. Translations are packed into the student file, so students need no account and can read them offline.</p>
+        <div class="langs" id="trLangs"></div>
+        <div class="btns"><button class="btn" id="trBtn">Translate notes</button><span class="small" id="trMsg"></span></div>
+        <hr class="divider">
+        <h3>2 · Send the notes</h3>
+        <div class="btns">
+          <button class="btn pri" id="exportBtn">Download student notes</button>
+          <button class="btn" id="previewBtn">Preview</button>
+          <button class="btn" id="copyBtn">Copy as text</button>
+          <button class="btn" id="saveBtn">Save editable copy</button>
+        </div>
+        <hr class="divider">
+        <h3>3 · Publish to a class</h3>
+        <p class="small" id="pubHint">Sign in under Classes to publish notes that only the students you approve can open.</p>
+        <div class="btns" id="pubRow" hidden><select id="pubClass" aria-label="Class to publish to" style="width:auto;flex:1;min-width:0"></select><button class="btn pri" id="pubBtn">Publish</button></div>
+        <span class="small" id="pubMsg"></span>
+      </section>
+    </aside>
+  </div>
+  </div>
+
+  <div id="view-classes" class="view" role="tabpanel" aria-labelledby="tab-classes" hidden>
+    <section class="card" id="cloudOff" hidden>
+      <h2>Classes are not set up yet</h2>
+      <p class="hint" style="margin-top:6px">Sign-in, student approval and publishing need a free Supabase project. Follow "Set up classes and sign-in" in the README, then add your project's address and public key to <code>config.js</code>. Everything on the Record &amp; edit tab keeps working without it.</p>
+    </section>
+
+    <section class="card" id="signinCard" hidden>
+      <h2>Sign in</h2>
+      <p class="hint" style="margin:6px 0 14px">Teachers and students use the same sign-in. Teachers create classes and approve students; students join with the code their teacher gives them.</p>
+      <div class="btns"><button class="btn pri" id="googleBtn">Continue with Google</button></div>
+      <div class="meta" style="margin-top:14px"><label class="f">Or sign in with email<input id="si-email" type="email" autocomplete="email" placeholder="name@college.ac.in"></label></div>
+      <div class="btns" style="margin-top:8px"><button class="btn" id="sendCode">Email me a sign-in code</button></div>
+      <div id="codeStep" hidden style="margin-top:12px;display:grid;gap:8px">
+        <div class="meta"><label class="f">Code from the email<input id="si-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10"></label></div>
+        <div class="btns"><button class="btn pri" id="verifyCode">Sign in</button></div>
+      </div>
+      <p class="small" id="siMsg" style="margin-top:10px"></p>
+    </section>
+
+    <div class="two" id="classesOn" hidden>
+      <section class="card">
+        <div class="sec-h"><h2>Classes you teach</h2><button class="btn" id="refreshBtn">Refresh</button></div>
+        <div class="btns" style="margin-bottom:6px"><input id="newClass" aria-label="New class name" placeholder="e.g. ME 11003 · Section A" style="flex:1;min-width:0;width:auto"><button class="btn pri" id="createClass">Create class</button></div>
+        <div class="cls-list" id="teachList"></div>
+      </section>
+      <section class="card">
+        <div class="sec-h"><h2>Classes you've joined</h2></div>
+        <div class="meta">
+          <label class="f">Class code<input id="j-code" autocomplete="off" maxlength="10" style="text-transform:uppercase"></label>
+          <label class="f">Your name<input id="j-name" autocomplete="name"></label>
+          <label class="f">Roll number<input id="j-roll" autocomplete="off"></label>
+        </div>
+        <div class="btns" style="margin-top:10px"><button class="btn pri" id="joinBtn">Ask to join</button><span class="small" id="joinMsg"></span></div>
+        <div class="cls-list" id="joinList" style="margin-top:14px"></div>
+      </section>
+    </div>
+  </div>
+
+  <footer><span>Medha · developed by Dr. Bipul Das, NIT Silchar · translation and speech by Bhashini, MeitY</span><span>Drafts stay in this browser until you share or publish them.</span></footer>
+</div>
+<div class="reader" id="reader" hidden>
+  <div class="reader-bar"><b id="readerTitle"></b><button class="btn" id="readerClose">Close</button></div>
+  <iframe id="readerFrame" title="Lecture notes" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<script>
+"use strict";
+/* ================= languages =================
+   code = Bhashini / ISO code. br = browser speech code (null: browser can't transcribe it).
+   gt = Google Translate code for the student-side fallback (null: not offered there). */
+const LANGS = [
+  {code:"en", name:"English", br:"en-IN", gt:"en"},
+  {code:"hi", name:"Hindi", br:"hi-IN", gt:"hi"},
+  {code:"as", name:"Assamese", br:"as-IN", gt:"as"},
+  {code:"bn", name:"Bengali", br:"bn-IN", gt:"bn"},
+  {code:"brx", name:"Bodo", br:null, gt:null},
+  {code:"mni", name:"Manipuri", br:null, gt:"mni-Mtei"},
+  {code:"ne", name:"Nepali", br:"ne-NP", gt:"ne"},
+  {code:"or", name:"Odia", br:"or-IN", gt:"or"},
+  {code:"ta", name:"Tamil", br:"ta-IN", gt:"ta"},
+  {code:"te", name:"Telugu", br:"te-IN", gt:"te"},
+  {code:"kn", name:"Kannada", br:"kn-IN", gt:"kn"},
+  {code:"ml", name:"Malayalam", br:"ml-IN", gt:"ml"},
+  {code:"mr", name:"Marathi", br:"mr-IN", gt:"mr"},
+  {code:"gu", name:"Gujarati", br:"gu-IN", gt:"gu"},
+  {code:"pa", name:"Punjabi", br:"pa-IN", gt:"pa"},
+  {code:"ur", name:"Urdu", br:"ur-IN", gt:"ur"},
+  {code:"mai", name:"Maithili", br:null, gt:"mai"},
+  {code:"sat", name:"Santali", br:null, gt:null},
+  {code:"gom", name:"Konkani", br:null, gt:"gom"},
+  {code:"doi", name:"Dogri", br:null, gt:"doi"},
+  {code:"ks", name:"Kashmiri", br:null, gt:null},
+  {code:"sd", name:"Sindhi", br:null, gt:"sd"},
+  {code:"sa", name:"Sanskrit", br:null, gt:"sa"}
+];
+const L = Object.fromEntries(LANGS.map(l=>[l.code,l]));
+const DANDA = new Set(["hi","as","bn","brx","mr","ne","or","sa","mai","doi"]);
+const KEY = "medha-draft-v2", BHKEY = "medha-bhashini";
+const CATS = {exam:"Exam tip", def:"Definition", formula:"Formula", key:"Key point"};
+const ORDER = ["exam","def","formula","key"];
+
+/* ================= state ================= */
+const today = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const fresh = () => ({meta:{title:"",course:"",teacher:"",date:today(),lang:"en"}, segs:[], elapsed:0, tr:{}, pick:["as","bn","hi"], engine:"browser", study:null, lid:uid()});
+function normalise(d){
+  const f = fresh(); d = d || {};
+  const meta = Object.assign(f.meta, d.meta||{});
+  if (meta.lang && meta.lang.includes("-")) meta.lang = meta.lang.split("-")[0];
+  if (!L[meta.lang]) meta.lang = "en";
+  return {meta, segs:(d.segs||[]).map(s=>({id:s.id||uid(), t:+s.t||0, text:String(s.text||""), manual:s.manual??null, ai:s.ai??null, aiDone:!!s.aiDone})),
+    elapsed:+d.elapsed||0, tr:d.tr&&typeof d.tr==="object"?d.tr:{}, pick:Array.isArray(d.pick)?d.pick:f.pick, engine:d.engine==="bhashini"?"bhashini":"browser",
+    study:d.study&&typeof d.study==="object"?d.study:null,
+    notesLang:L[d.notesLang]?d.notesLang:undefined, studyLang:L[d.studyLang]?d.studyLang:undefined, lid:d.lid||uid()};
+}
+const uid = () => Math.random().toString(36).slice(2,10);
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)) || JSON.parse(localStorage.getItem("medha-draft-v1")); } catch(e) {}
+S = normalise(S);
+let saveTimer;
+function save(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>{ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }, 400); }
+
+/* ================= helpers ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function fmt(sec){ sec=Math.max(0,Math.floor(sec)); const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;
+  return (h?h+":"+String(m).padStart(2,"0"):String(m).padStart(2,"0"))+":"+String(s).padStart(2,"0"); }
+function toast(t){ const el=$("#toast"); el.textContent=t; el.hidden=false; clearTimeout(el._t); el._t=setTimeout(()=>el.hidden=true,2600); }
+function slug(s){ return (s||"lecture").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,50)||"lecture"; }
+function download(name, text, type){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000); }
+function showError(msg){ const e=$("#errBanner"); e.textContent=msg||""; e.hidden=!msg; }
+
+/* ================= highlight detection =================
+   Rule-based: teachers signal importance with recognisable phrases.
+   Order matters: exam cues beat definitions, which beat formulas, which beat general key points. */
+const RULES = [
+  ["exam",   /\b(exams?|examination|marks|will be asked|frequently asked|viva|gate|end ?sem|mid ?sem|question paper|important for the)\b/i],
+  ["def",    /\b(is defined as|are defined as|defined as|is called|are called|is known as|are known as|known as|refers to|definition of|we define|is termed)\b/i],
+  ["formula",/(=|\bequals\b|\bequal to\b|\bformula\b|\bequation\b|\bproportional to\b|\bsquared\b|\bcubed\b|\bdivided by\b|\bmultiplied by\b|\bsquare root\b)/i],
+  ["key",    /\b(important|remember|note that|key point|keep in mind|must|never|always|advantages?|disadvantages?|limitations?|applications?|principle|law of|in summary|to summari[sz]e|in conclusion|therefore|types of|the main|main reason|the reason|widely used|(two|three|four|five) (parts|types|stages|steps|zones|kinds))\b/i]
+];
+function classify(text){ for (const [cat,re] of RULES) if (re.test(text)) return cat; return null; }
+/* teacher's choice beats the AI's, which beats the cue-phrase rules */
+const autoCat = s => s.ai ? (s.ai === "none" ? null : s.ai) : classify(s.text);
+const catOf = s => s.manual === undefined || s.manual === null ? autoCat(s) : (s.manual === "none" ? null : s.manual);
+const autoLabel = s => { const a = autoCat(s); return "Auto" + (a ? " (" + CATS[a] + (s.ai ? " · AI" : "") + ")" : ""); };
+
+function tidy(t){
+  t = t.replace(/\s+/g," ").trim()
+       .replace(/\s*\b(full stop|period)\b\s*/gi,". ").replace(/\s*\bcomma\b\s*/gi,", ").replace(/\s*\bquestion mark\b\s*/gi,"? ").trim();
+  if (!t) return "";
+  t = t.charAt(0).toUpperCase()+t.slice(1);
+  if (!/[.?!।॥]$/.test(t)) t += DANDA.has(S.meta.lang) && /[^\x00-\x7F]/.test(t) ? "।" : ".";
+  return t;
+}
+
+/* ================= Bhashini client =================
+   Step 1 (config): ULCA returns the service ID and an inference key for a task + language pair.
+   Step 2 (compute): call the Dhruva inference endpoint with that key. Configs are cached per session. */
+const BH = {
+  cfgUrl: "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model/getModelsPipeline",
+  pipelineId: "64392f96daac500b55c543cd",
+  cache: {}
+};
+let bhCred = {user:"", key:""};
+try { bhCred = Object.assign(bhCred, JSON.parse(localStorage.getItem(BHKEY))||{}); } catch(e) {}
+const bhReady = () => !!(bhCred.user && bhCred.key);
+
+async function bhFetch(url, opts){
+  let res;
+  try { res = await fetch(url, opts); }
+  catch(e) { throw new Error("Could not reach Bhashini. Check the internet connection. If it keeps failing, your network may be blocking the Bhashini servers."); }
+  let j = null; try { j = await res.json(); } catch(e) {}
+  if (!res.ok) {
+    const m = (j && (j.message || j.detail && (j.detail.message || j.detail) || j.error)) || res.statusText;
+    if (res.status === 401 || res.status === 403) throw new Error("Bhashini rejected the User ID or API key. Check them under Bhashini connection.");
+    throw new Error("Bhashini error " + res.status + ": " + (typeof m === "string" ? m : JSON.stringify(m)));
+  }
+  return j;
+}
+async function bhConfig(task, src, tgt){
+  if (!bhReady()) throw new Error("Add your Bhashini User ID and API key first (Bhashini connection, above).");
+  const ck = [task,src,tgt||""].join("|");
+  if (BH.cache[ck]) return BH.cache[ck];
+  const language = tgt ? {sourceLanguage:src, targetLanguage:tgt} : {sourceLanguage:src};
+  const j = await bhFetch(BH.cfgUrl, {method:"POST", headers:{"Content-Type":"application/json", userID:bhCred.user, ulcaApiKey:bhCred.key},
+    body: JSON.stringify({pipelineTasks:[{taskType:task, config:{language}}], pipelineRequestConfig:{pipelineId:BH.pipelineId}})});
+  const svc = j && j.pipelineResponseConfig && j.pipelineResponseConfig[0] && j.pipelineResponseConfig[0].config && j.pipelineResponseConfig[0].config[0];
+  const ep = j && j.pipelineInferenceAPIEndPoint;
+  if (!svc || !ep) throw new Error(`Bhashini has no ${task==="asr"?"speech recognition":"translation"} service for ${L[src]?.name||src}${tgt?" → "+(L[tgt]?.name||tgt):""}.`);
+  return BH.cache[ck] = {serviceId:svc.serviceId, url:ep.callbackUrl, auth:ep.inferenceApiKey.value, name:ep.inferenceApiKey.name||"Authorization"};
+}
+async function bhCompute(cfg, task, language, inputData, extra){
+  return bhFetch(cfg.url, {method:"POST", headers:{"Content-Type":"application/json", Accept:"*/*", [cfg.name]:cfg.auth},
+    body: JSON.stringify({pipelineTasks:[{taskType:task, config:Object.assign({language, serviceId:cfg.serviceId}, extra||{})}], inputData})});
+}
+async function bhTranslate(texts, src, tgt){
+  const cfg = await bhConfig("translation", src, tgt), out = [];
+  for (let i=0; i<texts.length; i+=20){
+    const batch = texts.slice(i,i+20);
+    const j = await bhCompute(cfg, "translation", {sourceLanguage:src, targetLanguage:tgt}, {input:batch.map(t=>({source:t}))});
+    const o = j.pipelineResponse[0].output;
+    batch.forEach((_,k)=>out.push(o[k] ? o[k].target : ""));
+  }
+  return out;
+}
+async function bhASR(b64, src){
+  const cfg = await bhConfig("asr", src);
+  const j = await bhCompute(cfg, "asr", {sourceLanguage:src}, {audio:[{audioContent:b64}]}, {audioFormat:"wav", samplingRate:16000});
+  const o = j.pipelineResponse && j.pipelineResponse[0] && j.pipelineResponse[0].output;
+  return (o && o[0] && o[0].source) || "";
+}
+
+/* ================= AI assistant (Gemini or Claude) =================
+   Both providers are called straight from the browser with the teacher's own key and asked
+   for JSON only. Each call is checked before anything in the notes is changed. */
+const AIKEY = "medha-ai";
+const AI_DEFAULT_MODEL = {gemini:"gemini-3.6-flash", claude:"claude-sonnet-5-5"};
+let aiCfg = {prov:"gemini", key:"", model:"", out:"same", ok:false};
+try { aiCfg = Object.assign(aiCfg, JSON.parse(localStorage.getItem(AIKEY))||{}); } catch(e) {}
+const aiReady = () => !!aiCfg.key;
+const aiModel = () => aiCfg.model || AI_DEFAULT_MODEL[aiCfg.prov];
+const outLangCode = () => aiCfg.out === "en" ? "en" : S.meta.lang;
+
+async function aiCall(system, user){
+  if (!aiReady()) throw new Error("Add an AI key first (AI assistant, above).");
+  let res, j = null;
+  try {
+    if (aiCfg.prov === "claude") {
+      res = await fetch("https://api.anthropic.com/v1/messages", {method:"POST",
+        headers:{"content-type":"application/json","x-api-key":aiCfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body: JSON.stringify({model:aiModel(), max_tokens:8000, system, messages:[{role:"user", content:user}]})});
+    } else {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(aiModel())}:generateContent`, {method:"POST",
+        headers:{"Content-Type":"application/json","x-goog-api-key":aiCfg.key},
+        body: JSON.stringify({systemInstruction:{parts:[{text:system}]}, contents:[{role:"user", parts:[{text:user}]}],
+          generationConfig:{responseMimeType:"application/json", temperature:0.2}})});
+    }
+  } catch(e) { throw new Error("Could not reach the AI service. Check the internet connection."); }
+  try { j = await res.json(); } catch(e) {}
+  if (!res.ok) {
+    const m = j && j.error && (j.error.message || j.error.type) || res.statusText;
+    if (res.status === 401 || res.status === 403 || /api key/i.test(m||"")) throw new Error("The AI service rejected the API key. Check it under AI assistant.");
+    if (res.status === 429) throw new Error("The AI service's usage limit was reached. Wait a minute and try again.");
+    if (res.status === 404) throw new Error(`Model "${aiModel()}" was not found. Check the model name under AI assistant.`);
+    throw new Error("AI error " + res.status + ": " + m);
+  }
+  const text = aiCfg.prov === "claude"
+    ? (j.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("")
+    : ((j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[]).map(p=>p.text||"").join("");
+  return text;
+}
+function parseJSON(text){
+  let t = String(text||"").trim().replace(/^```(?:json)?\s*/i,"").replace(/```\s*$/,"");
+  try { return JSON.parse(t); } catch(e) {}
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a,b+1)); } catch(e) {} }
+  throw new Error("The AI reply could not be read. Try again.");
+}
+async function aiJSON(system, user){ return parseJSON(await aiCall(system, user)); }
+const ctxLine = () => [S.meta.course && "Course: "+S.meta.course, S.meta.title && "Lecture topic: "+S.meta.title].filter(Boolean).join("\n");
+
+/* ---------- clean-up ---------- */
+const CLEAN_SYS = lang => `You edit raw speech-recognition transcripts of engineering lectures given in India.
+You receive JSON {"lines":[{"id","text"}]} in spoken order. Return ONLY JSON {"lines":[{"id","text","cat"}]} with every input id, in the same order.
+For each line:
+- Fix words the recogniser misheard, using the course and topic to restore the correct technical terms (for example "austin night" → "austenite").
+- Add punctuation and capitalisation. Write spoken formulas in readable notation with symbols, e.g. "Q equals mu times P divided by v" → "Q = μP / v".
+- The teacher may mix languages. Write the line clearly in ${lang}, keeping standard technical terms in English where students would expect them.
+- Keep the teacher's meaning. Do not add facts, examples or explanations that were not said. Do not merge or split lines.
+- cat is one of: "exam" (the teacher signals it matters for exams or tests), "def" (a definition), "formula" (an equation or quantitative relation), "key" (an important concept, principle, advantage, limitation or application), "none" (anything else), "drop" (pure noise: false starts, "can you hear me", attendance talk). Be selective: usually fewer than half the lines deserve exam/def/formula/key.`;
+let undoSnap = null, cleaning = false;
+async function cleanUp(){
+  if (cleaning) return;
+  if (!S.segs.length) { toast("Record or type some notes first"); return; }
+  if (!aiReady()) { openCard("#aiCard"); toast("Connect an AI service first"); return; }
+  let todo = S.segs.filter(s=>!s.aiDone);
+  if (!todo.length) { toast("All lines are already cleaned. Lines you edit yourself are kept as you wrote them."); return; }
+  if (recording) stopRec();
+  cleaning = true; $("#cleanBtn").disabled = true; const msg = $("#cleanMsg"); showError("");
+  undoSnap = {segs:JSON.parse(JSON.stringify(S.segs)), tr:JSON.parse(JSON.stringify(S.tr))};
+  const lang = L[outLangCode()].name, drop = new Set(); let changed = 0, done = 0;
+  try {
+    for (let i=0; i<todo.length; i+=40){
+      const batch = todo.slice(i,i+40);
+      const before = S.segs.slice(Math.max(0,S.segs.indexOf(batch[0])-3), S.segs.indexOf(batch[0])).map(s=>s.text);
+      msg.textContent = `Cleaning lines ${i+1}–${i+batch.length} of ${todo.length}…`;
+      const user = `${ctxLine()}\nTeaching language: ${L[S.meta.lang].name}${before.length?"\nPrevious lines, for context only:\n"+before.join("\n"):""}\n\n` + JSON.stringify({lines:batch.map(s=>({id:s.id,text:s.text}))});
+      const j = await aiJSON(CLEAN_SYS(lang), user);
+      const byId = Object.fromEntries((j.lines||[]).filter(x=>x&&x.id).map(x=>[x.id,x]));
+      batch.forEach(s=>{
+        const r = byId[s.id]; if (!r) return;
+        const cat = String(r.cat||"none");
+        if (cat === "drop") { drop.add(s.id); return; }
+        const text = String(r.text||"").trim();
+        if (text && text !== s.text) { s.text = text; invalidate(s.id); changed++; }
+        s.ai = ["exam","def","formula","key"].includes(cat) ? cat : "none"; s.aiDone = true; done++;
+      });
+      save();
+    }
+  } catch(e) { showError(e.message); }
+  if (drop.size) { S.segs = S.segs.filter(s=>!drop.has(s.id)); drop.forEach(invalidate); }
+  if (S.meta.lang !== outLangCode() && done) { S.notesLang = outLangCode(); }
+  cleaning = false; $("#cleanBtn").disabled = false; save(); renderNotes(); renderSummary();
+  msg.textContent = done ? `Cleaned ${done} line${done>1?"s":""}: ${changed} corrected${drop.size?", "+drop.size+" filler line"+(drop.size>1?"s":"")+" removed":""}. Check the lines marked AI.` : "";
+  $("#undoBtn").hidden = !done;
+}
+$("#cleanBtn").onclick = cleanUp;
+$("#undoBtn").onclick = () => { if (!undoSnap) return; S.segs = undoSnap.segs; S.tr = undoSnap.tr; undoSnap = null; delete S.notesLang;
+  $("#undoBtn").hidden = true; $("#cleanMsg").textContent = "AI changes undone."; save(); renderNotes(); renderSummary(); };
+
+/* ---------- study notes ---------- */
+const STUDY_SYS = lang => `You turn a reviewed engineering lecture transcript into concise study notes for undergraduate students in India.
+Write in ${lang}; keep standard technical terms and symbols in English. Use only what the lecture says; you may restate it more clearly but do not add new facts.
+Return ONLY JSON:
+{"summary":"2-4 sentences on what the lecture covered",
+ "topics":[{"heading":"short topic name","points":["one idea per point, under 30 words"]}],
+ "formulas":[{"expr":"formula in symbols, e.g. Q = μPωR / v","meaning":"what each symbol means and when it is used"}],
+ "questions":[{"q":"an exam-style revision question","a":"a model answer in 1-3 sentences"}]}
+Use 2-6 topics with 2-6 points each, list every formula the lecture gives (none if there are none), and 3-6 questions that a teacher could set from this lecture.`;
+let studying = false;
+async function makeStudy(){
+  if (studying) return;
+  if (!S.segs.length) { toast("Record or type some notes first"); return; }
+  if (!aiReady()) { openCard("#aiCard"); toast("Connect an AI service first"); return; }
+  studying = true; $("#studyBtn").disabled = true; $("#studyMsg").textContent = "Writing study notes…"; showError("");
+  try {
+    const transcript = S.segs.map(s=>`[${fmt(s.t)}]${catOf(s)?" ("+CATS[catOf(s)]+")":""} ${s.text}`).join("\n");
+    const j = await aiJSON(STUDY_SYS(L[outLangCode()].name), `${ctxLine()}\n\nLecture transcript:\n${transcript}`);
+    const str = v => String(v??"").trim();
+    S.studyLang = outLangCode();
+    S.study = {
+      summary: str(j.summary),
+      topics: (j.topics||[]).map(t=>({heading:str(t.heading), points:(t.points||[]).map(str).filter(Boolean)})).filter(t=>t.heading||t.points.length),
+      formulas: (j.formulas||[]).map(f=>({expr:str(f.expr), meaning:str(f.meaning)})).filter(f=>f.expr),
+      questions: (j.questions||[]).map(q=>({q:str(q.q), a:str(q.a)})).filter(q=>q.q)
+    };
+    Object.values(S.tr).forEach(t=>Object.keys(t).forEach(k=>{ if (k.startsWith("st:")) delete t[k]; }));
+    $("#studyMsg").textContent = "Done. Click any part to edit it.";
+    $("#studyBtn").textContent = "Write them again";
+    save(); renderStudy(); renderTrLangs();
+  } catch(e) { $("#studyMsg").textContent = ""; showError(e.message); }
+  studying = false; $("#studyBtn").disabled = false;
+}
+$("#studyBtn").onclick = makeStudy;
+/* every editable/translatable piece of the study notes, as [key, text] */
+function studyItems(){
+  const st = S.study, out = []; if (!st) return out;
+  if (st.summary) out.push(["st:summary", st.summary]);
+  st.topics.forEach((t,i)=>{ if (t.heading) out.push([`st:topics.${i}.heading`, t.heading]); t.points.forEach((p,k)=>out.push([`st:topics.${i}.points.${k}`, p])); });
+  st.formulas.forEach((f,i)=>{ if (f.meaning) out.push([`st:formulas.${i}.meaning`, f.meaning]); });
+  st.questions.forEach((q,i)=>{ out.push([`st:questions.${i}.q`, q.q]); if (q.a) out.push([`st:questions.${i}.a`, q.a]); });
+  return out;
+}
+function setPath(obj, path, val){ const ks = path.split("."); let o = obj; for (let i=0;i<ks.length-1;i++) o = o[ks[i]]; o[ks[ks.length-1]] = val; }
+function renderStudy(){
+  const st = S.study, box = $("#study");
+  $("#studyBtn").textContent = st ? "Write them again" : "Generate study notes";
+  if (!st) { box.innerHTML = `<p class="hint">After the lecture, AI can turn it into a summary, topic-wise points, formulas and revision questions that go into the student file.</p>`; return; }
+  const ed = (key, text, tag="span", cls="") => `<${tag} class="${cls}" contenteditable="true" data-st="${key}">${esc(text)}</${tag}>`;
+  box.innerHTML =
+    (st.summary ? `<div><h3>Summary</h3>${ed("summary", st.summary, "p", "")}</div>` : "") +
+    (st.topics.length ? `<div><h3>Topics</h3><div style="display:grid;gap:10px">${st.topics.map((t,i)=>`<div class="topic">${ed(`topics.${i}.heading`, t.heading, "b")}<ul>${t.points.map((p,k)=>`<li>${ed(`topics.${i}.points.${k}`, p)}</li>`).join("")}</ul></div>`).join("")}</div></div>` : "") +
+    (st.formulas.length ? `<div><h3>Formulas</h3><ul>${st.formulas.map((f,i)=>`<li>${ed(`formulas.${i}.expr`, f.expr, "span", "formula")}<br>${ed(`formulas.${i}.meaning`, f.meaning, "span", "ans")}</li>`).join("")}</ul></div>` : "") +
+    (st.questions.length ? `<div><h3>Revision questions</h3><ol>${st.questions.map((q,i)=>`<li>${ed(`questions.${i}.q`, q.q)}<br>${ed(`questions.${i}.a`, q.a, "span", "ans")}</li>`).join("")}</ol></div>` : "");
+}
+
+/* ---------- settings ---------- */
+function openCard(sel){ const c=$(sel); c.open = true; c.scrollIntoView({behavior:"smooth", block:"start"}); }
+function renderAI(){
+  $("#ai-prov").value = aiCfg.prov; $("#ai-key").value = aiCfg.key; $("#ai-out").value = aiCfg.out;
+  $("#ai-model").value = aiCfg.model; $("#ai-model").placeholder = AI_DEFAULT_MODEL[aiCfg.prov];
+  const chip = $("#aiChip");
+  chip.textContent = aiCfg.ok ? "Connected · " + (aiCfg.prov==="claude"?"Claude":"Gemini") : aiReady() ? "Key saved · not tested" : "Not connected";
+  chip.className = "chip" + (aiCfg.ok ? " ok" : "");
+}
+function storeAI(){ try { localStorage.setItem(AIKEY, JSON.stringify(aiCfg)); } catch(e) {} }
+$("#ai-prov").onchange = e => { aiCfg.prov = e.target.value; aiCfg.model = ""; aiCfg.ok = false; storeAI(); renderAI(); };
+$("#ai-out").onchange = e => { aiCfg.out = e.target.value; storeAI(); };
+$("#aiTest").onclick = async () => {
+  aiCfg.key = $("#ai-key").value.trim(); aiCfg.model = $("#ai-model").value.trim(); aiCfg.ok = false; storeAI();
+  const msg = $("#aiMsg");
+  if (!aiCfg.key) { msg.textContent = "Paste an API key first."; renderAI(); return; }
+  msg.textContent = "Testing…";
+  try {
+    const j = await aiJSON(CLEAN_SYS("English"), "Course: Machining\n\n" + JSON.stringify({lines:[{id:"t1",text:"the cutting speed is defined as pie d n divided by thousand"}]}));
+    const r = (j.lines||[])[0];
+    if (!r || !r.text) throw new Error("The AI answered, but not in the expected format. Try another model.");
+    aiCfg.ok = true; storeAI(); msg.textContent = "Connected. Test line cleaned to: " + r.text;
+  } catch(e) { msg.textContent = e.message; }
+  renderAI();
+};
+
+/* ================= rendering ================= */
+function segHTML(s){
+  const c = catOf(s), val = s.manual ?? "auto";
+  const opts = [["auto",autoLabel(s)],...ORDER.map(k=>[k,CATS[k]]),["none","No highlight"]]
+    .map(([v,l])=>`<option value="${v}" ${v===val?"selected":""}>${l}</option>`).join("");
+  return `<div class="seg c-${c||"none"}" data-id="${s.id}">
+    <span class="ts">${fmt(s.t)}${s.aiDone?'<br><span class="ai-badge" title="Cleaned by AI">AI</span>':""}</span>
+    <div class="txt" contenteditable="true" spellcheck="true" aria-label="Note at ${fmt(s.t)}">${esc(s.text)}</div>
+    <div class="seg-act"><select aria-label="Highlight type">${opts}</select><button class="x" aria-label="Delete line">✕</button></div></div>`;
+}
+function renderNotes(){
+  $("#notes").innerHTML = S.segs.length ? S.segs.map(segHTML).join("")
+    : `<div class="empty">No notes yet. Press record when the class begins, or try the demo lecture to see how it works.</div>`;
+}
+function appendSeg(s){
+  const box = $("#notes"); if (box.querySelector(".empty")) box.innerHTML = "";
+  box.insertAdjacentHTML("beforeend", segHTML(s));
+  if (window.innerHeight + window.scrollY > document.body.scrollHeight - 400) box.lastElementChild.scrollIntoView({block:"nearest", behavior:"smooth"});
+}
+function refreshRow(s){
+  const row = document.querySelector(`.seg[data-id="${s.id}"]`); if (!row) return;
+  row.className = "seg c-" + (catOf(s)||"none");
+  row.querySelector('option[value="auto"]').textContent = autoLabel(s);
+}
+function renderSummary(){
+  const groups = Object.fromEntries(ORDER.map(k=>[k,[]]));
+  S.segs.forEach(s=>{ const c=catOf(s); if(c) groups[c].push(s); });
+  const total = ORDER.reduce((a,k)=>a+groups[k].length,0);
+  $("#summary").innerHTML = total ? ORDER.filter(k=>groups[k].length).map(k=>`<div class="grp">
+      <h3 style="color:var(--tg-${k})"><span class="sw" style="background:var(--hl-${k});outline:1px solid var(--tg-${k})"></span>${CATS[k]} · ${groups[k].length}</h3>
+      <ul>${groups[k].map(s=>`<li><button data-jump="${s.id}">${esc(s.text.length>150?s.text.slice(0,150)+"…":s.text)}</button></li>`).join("")}</ul></div>`).join("")
+    : `<p class="hint">Definitions, formulas, exam tips and key points will collect here as you teach.${S.meta.lang!=="en"?" Automatic highlighting works on English speech; mark lines yourself for other languages.":""}</p>`;
+  $("#hc").textContent = total;
+  $("#wc").textContent = S.segs.reduce((a,s)=>a+(s.text.trim()?s.text.trim().split(/\s+/).length:0),0);
+  renderTrLangs();
+}
+/* the language each piece of text is written in (AI may have rewritten it in English) */
+const notesSrc = () => S.notesLang || S.meta.lang;
+const srcOf = key => key.startsWith("st:") ? (S.studyLang || notesSrc()) : notesSrc();
+/* every translatable piece of the lecture as [key, text] */
+const trItems = () => [...S.segs.map(s=>[s.id, s.text]), ...(S.meta.title?[["_title", S.meta.title]]:[]), ...studyItems()];
+/* how many current pieces each language already has a translation for */
+const trDone = code => { const t=S.tr[code]||{}; return trItems().filter(([k])=>t[k]!=null).length; };
+function renderTrLangs(){
+  const box = $("#trLangs"); if (!box) return;
+  const focused = document.activeElement && document.activeElement.closest && document.activeElement.closest("#trLangs") ? document.activeElement.value : null;
+  const n = trItems().length;
+  box.innerHTML = LANGS.filter(l=>l.code!==notesSrc()).map(l=>{
+    const d = trDone(l.code);
+    const badge = d ? `<span class="n">${d===n?"✓":d+"/"+n}</span>` : "";
+    return `<label><input type="checkbox" value="${l.code}" ${S.pick.includes(l.code)?"checked":""}>${l.name}${badge}</label>`;
+  }).join("");
+  if (focused) box.querySelector(`input[value="${focused}"]`)?.focus();
+}
+function renderMeta(){
+  $("#m-lang").innerHTML = LANGS.map(l=>`<option value="${l.code}">${l.name}${l.br?"":" · Bhashini only"}</option>`).join("");
+  document.querySelectorAll("[data-m]").forEach(el=>el.value = S.meta[el.dataset.m] ?? "");
+  $("#engine").value = S.engine;
+}
+function renderBh(){
+  $("#bh-user").value = bhCred.user; $("#bh-key").value = bhCred.key;
+  const chip = $("#bhChip");
+  chip.textContent = bhCred.ok ? "Connected" : bhReady() ? "Key saved · not tested" : "Not connected";
+  chip.className = "chip" + (bhCred.ok ? " ok" : "");
+}
+function renderAll(){
+  undoSnap = null; $("#undoBtn").hidden = true; $("#cleanMsg").textContent = ""; $("#studyMsg").textContent = "";
+  renderMeta(); renderNotes(); renderStudy(); renderSummary(); renderBh(); renderAI(); $("#timer").textContent = fmt(S.elapsed);
+  if (typeof renderPublish === "function" && $("#pubRow")) { try { renderPublish(); } catch(e) {} }
+}
+
+/* ================= recording (shared) ================= */
+let recording = false, startedAt = 0, baseElapsed = 0, tick = null, demoTimer = null;
+const now = () => baseElapsed + (recording ? (Date.now()-startedAt)/1000 : 0);
+function addSeg(text, t){
+  text = tidy(text); if (!text) return;
+  const s = {id:uid(), t:Math.round(t ?? now()), text, manual:null};
+  S.segs.push(s); appendSeg(s); renderSummary(); save();
+}
+function setRecUI(on, label){
+  const b = $("#recBtn"); b.classList.toggle("on", on);
+  b.innerHTML = on ? '<span class="sq"></span>' : '<span class="dot"></span>';
+  b.setAttribute("aria-label", on ? "Stop recording" : "Start recording");
+  $("#stLabel").textContent = label;
+}
+function beginClock(label){
+  recording = true; startedAt = Date.now(); baseElapsed = S.elapsed||0;
+  setRecUI(true, label);
+  tick = setInterval(()=>{ S.elapsed = now(); $("#timer").textContent = fmt(S.elapsed); }, 500);
+}
+function endClock(){
+  if (!recording) return false;
+  recording = false; S.elapsed = baseElapsed + (Date.now()-startedAt)/1000; baseElapsed = S.elapsed; clearInterval(tick);
+  setRecUI(false, S.segs.length ? "Paused · review your notes" : "Ready to record");
+  $("#interim").textContent = S.segs.length ? "Press record to continue the same lecture." : "Press the red button when the class starts.";
+  $("#timer").textContent = fmt(S.elapsed); save(); return true;
+}
+let activeEngine = null;
+function startRec(){
+  showError("");
+  const eng = S.engine === "bhashini" ? bhashiniEngine : browserEngine;
+  if (eng === browserEngine && !L[S.meta.lang].br) {
+    showError(`Browsers can't transcribe ${L[S.meta.lang].name}. Switch the speech engine to Bhashini.`); return;
+  }
+  activeEngine = eng; eng.start();
+}
+function stopRec(){ if (activeEngine) activeEngine.stop(); activeEngine = null; }
+$("#recBtn").onclick = () => { if (demoTimer) { stopDemo(); return; } recording ? stopRec() : startRec(); };
+
+/* ---------- engine 1: browser Web Speech API ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const browserEngine = {
+  rec:null,
+  start(){
+    if (!SR){ showError("This browser can't transcribe live. Use Chrome or Edge, or switch the speech engine to Bhashini."); return; }
+    const rec = this.rec = new SR(); rec.lang = L[S.meta.lang].br; rec.continuous = true; rec.interimResults = true;
+    rec.onresult = e => { let interim = "";
+      for (let i=e.resultIndex; i<e.results.length; i++){ const r=e.results[i]; if (r.isFinal) addSeg(r[0].transcript); else interim += r[0].transcript; }
+      $("#interim").textContent = interim || "Listening…"; };
+    rec.onerror = e => {
+      if (e.error === "no-speech" || e.error === "aborted") return;
+      const m = {"not-allowed":"Microphone access was blocked. Allow the microphone for this site in the address bar, then press record again.",
+        "service-not-allowed":"The browser's speech service is turned off. Use Chrome or Edge, or switch the speech engine to Bhashini.",
+        "network":"The browser's speech service needs internet. Recording paused; press record when you are back online.",
+        "language-not-supported":"This browser can't transcribe the selected language. Switch the speech engine to Bhashini."}[e.error] || ("Speech recognition stopped: "+e.error);
+      showError(m); stopRec();
+    };
+    rec.onend = () => { if (recording && activeEngine===this) { try { rec.start(); } catch(err) { setTimeout(()=>{ try{rec.start()}catch(e2){} },300); } } };
+    try { rec.start(); } catch(err) { showError("Could not start the microphone. Close other apps using it and try again."); return; }
+    beginClock("Recording · teach normally"); $("#interim").textContent = "Listening…";
+  },
+  stop(){ const r=this.rec; this.rec=null; endClock(); try { r && r.stop(); } catch(e) {} }
+};
+
+/* ---------- engine 2: Bhashini ASR ----------
+   Captures the mic, resamples to 16 kHz mono, cuts the stream at natural pauses
+   (or every 14 s at most), and sends each piece as a WAV clip. Clips are sent one at a
+   time so the notes stay in spoken order. */
+const bhashiniEngine = {
+  ctx:null, stream:null, proc:null, buf:[], bufLen:0, silentMs:0, chunkStart:0, voiced:0, queue:Promise.resolve(), pending:0,
+  async start(){
+    if (!bhReady()) { showError("Add your Bhashini User ID and API key first (Bhashini connection)."); $("#bhCard").open = true; return; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showError("This browser can't use the microphone. Open Medha from an https:// address in Chrome, Edge or Firefox."); return; }
+    try { await bhConfig("asr", S.meta.lang); }
+    catch(e) { showError(e.message); return; }
+    try { this.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, channelCount:1}}); }
+    catch(e) { showError("Microphone access was blocked. Allow the microphone for this site, then press record again."); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new AC(); const src = this.ctx.createMediaStreamSource(this.stream);
+    this.proc = this.ctx.createScriptProcessor(4096,1,1);
+    this.ratio = this.ctx.sampleRate/16000; this.buf=[]; this.bufLen=0; this.silentMs=0; this.voiced=0;
+    beginClock("Recording with Bhashini · teach normally"); this.chunkStart = now();
+    $("#interim").textContent = "Listening…";
+    this.proc.onaudioprocess = e => this.onAudio(e.inputBuffer.getChannelData(0));
+    src.connect(this.proc); this.proc.connect(this.ctx.destination);
+  },
+  onAudio(data){
+    if (!recording) return;
+    const outLen = Math.floor(data.length/this.ratio), out = new Float32Array(outLen);
+    let sum = 0;
+    for (let i=0;i<outLen;i++){ const a=Math.floor(i*this.ratio), b=Math.min(data.length,Math.floor((i+1)*this.ratio)); let v=0; for(let k=a;k<b;k++) v+=data[k]; out[i]=v/Math.max(1,b-a); sum+=out[i]*out[i]; }
+    const rms = Math.sqrt(sum/Math.max(1,outLen)), ms = outLen/16;
+    if (rms < 0.012) this.silentMs += ms; else { this.silentMs = 0; this.voiced += ms; }
+    this.buf.push(out); this.bufLen += outLen;
+    const sec = this.bufLen/16000;
+    if ((sec >= 3 && this.silentMs >= 700) || sec >= 14) this.flush();
+  },
+  flush(){
+    const voiced = this.voiced, t = this.chunkStart, len = this.bufLen, parts = this.buf;
+    this.buf=[]; this.bufLen=0; this.silentMs=0; this.voiced=0; this.chunkStart = now();
+    if (voiced < 400 || !len) return;            // nothing but silence: don't spend an API call
+    const pcm = new Float32Array(len); let o=0; parts.forEach(p=>{pcm.set(p,o);o+=p.length;});
+    const b64 = toBase64(wav16(pcm)); const lang = S.meta.lang;
+    this.pending++; this.status();
+    this.queue = this.queue.then(()=>bhASR(b64, lang)).then(text=>{ if (text) addSeg(text, t); })
+      .catch(e=>{ showError(e.message); }).finally(()=>{ this.pending--; this.status(); });
+  },
+  status(){ $("#interim").textContent = this.pending ? `Transcribing ${this.pending} clip${this.pending>1?"s":""}…` : (recording ? "Listening…" : "Press record to continue the same lecture."); },
+  stop(){
+    if (recording) this.flush();
+    endClock();
+    try { this.proc && (this.proc.onaudioprocess=null, this.proc.disconnect()); } catch(e) {}
+    try { this.stream && this.stream.getTracks().forEach(t=>t.stop()); } catch(e) {}
+    try { this.ctx && this.ctx.close(); } catch(e) {}
+    this.proc=this.stream=this.ctx=null; this.status();
+  }
+};
+function wav16(f32){
+  const buf = new ArrayBuffer(44+f32.length*2), v = new DataView(buf);
+  const w = (o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); };
+  w(0,"RIFF"); v.setUint32(4,36+f32.length*2,true); w(8,"WAVE"); w(12,"fmt "); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,16000,true); v.setUint32(28,32000,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,"data"); v.setUint32(40,f32.length*2,true);
+  for (let i=0;i<f32.length;i++){ const s=Math.max(-1,Math.min(1,f32[i])); v.setInt16(44+i*2, s<0?s*0x8000:s*0x7fff, true); }
+  return buf;
+}
+function toBase64(ab){ const u=new Uint8Array(ab); let s=""; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return btoa(s); }
+
+/* ================= demo (works without a microphone) ================= */
+const DEMO = [
+  "Good morning everyone today we will start a new topic friction stir welding",
+  "Friction stir welding is defined as a solid state joining process in which a rotating non consumable tool joins two workpieces without melting them",
+  "It was invented at The Welding Institute in the UK in 1991",
+  "The tool has two parts the shoulder and the pin",
+  "The shoulder generates most of the frictional heat while the pin stirs the softened material",
+  "Remember that the peak temperature is usually around 80 to 90 percent of the melting temperature of the base metal",
+  "The heat input per unit length is often written as Q equals mu times P times omega times R divided by traverse speed",
+  "So if you increase the rotational speed the heat input increases and if you increase the welding speed the heat input decreases",
+  "The side where tool rotation and welding direction are the same is called the advancing side",
+  "The other side is known as the retreating side",
+  "The main advantages are no fumes no filler wire and very low distortion",
+  "This process is widely used for aluminium alloys in aerospace railway coaches and electric vehicle battery trays",
+  "This comparison between advancing side and retreating side is very important for your end sem exam",
+  "Next class we will look at defects such as tunnel defects and kissing bonds"
+];
+let pending = null;
+function confirmInline(what){
+  if (pending === what) { pending = null; return true; }
+  pending = what; setTimeout(()=>{ if (pending===what) pending=null; }, 4000);
+  toast(what==="new" ? "Click New lecture again to clear these notes." : "Click the demo button again to replace your current notes.");
+  return false;
+}
+function runDemo(){
+  if (recording) stopRec();
+  if (S.segs.length && !confirmInline("demo")) return;
+  const keep = {pick:S.pick, engine:S.engine};
+  S = Object.assign(fresh(), keep); S.meta.title = "Friction stir welding: process basics"; S.meta.course = "Sample lecture (demo)"; S.meta.teacher = "Demo";
+  renderAll(); baseElapsed = 0; recording = true; startedAt = Date.now();
+  setRecUI(true, "Demo lecture playing");
+  let line = 0, word = 0;
+  demoTimer = setInterval(()=>{
+    S.elapsed = now(); $("#timer").textContent = fmt(S.elapsed);
+    const words = DEMO[line].split(" "); word++;
+    $("#interim").textContent = words.slice(0,word).join(" ");
+    if (word >= words.length){ addSeg(DEMO[line]); line++; word = 0;
+      if (line >= DEMO.length){ stopDemo(); toast("Demo finished. Try translating it with Bhashini or downloading the student notes."); } }
+  }, 110);
+}
+function stopDemo(){ clearInterval(demoTimer); demoTimer = null; recording = false; S.elapsed = now(); baseElapsed = S.elapsed;
+  setRecUI(false, "Paused · review your notes"); $("#interim").textContent = "Press record to continue, or review the notes below."; save(); }
+$("#demoBtn").onclick = runDemo;
+$("#newBtn").onclick = () => { if (S.segs.length && !confirmInline("new")) return; if (recording) stopRec(); if (demoTimer) stopDemo();
+  const keep = {pick:S.pick, engine:S.engine, lang:S.meta.lang};
+  S = Object.assign(fresh(), {pick:keep.pick, engine:keep.engine}); S.meta.lang = keep.lang; baseElapsed = 0; $("#trMsg").textContent = ""; showError(""); save(); renderAll(); setRecUI(false,"Ready to record"); toast("New lecture started"); };
+
+/* ================= editing ================= */
+function invalidate(id){ Object.values(S.tr).forEach(t=>{ delete t[id]; }); }
+document.addEventListener("input", e => {
+  const m = e.target.dataset && e.target.dataset.m;
+  if (m && m !== "lang") { S.meta[m] = e.target.value; if (m==="title") Object.values(S.tr).forEach(t=>delete t._title); save(); return; }
+  if (e.target.classList.contains("txt")) {
+    const s = S.segs.find(x=>x.id===e.target.closest(".seg").dataset.id); if (!s) return;
+    s.text = e.target.innerText.replace(/\s+/g," ").trim(); invalidate(s.id); refreshRow(s); renderSummary(); save();
+    return;
+  }
+  const st = e.target.dataset && e.target.dataset.st;
+  if (st && S.study) { setPath(S.study, st, e.target.innerText.replace(/\s+/g," ").trim()); Object.values(S.tr).forEach(t=>delete t["st:"+st]); renderTrLangs(); save(); }
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "m-lang") {
+    if (S.segs.length && Object.keys(S.tr).length) { S.tr = {}; toast("Translations cleared because the notes' language changed."); }
+    S.meta.lang = t.value; S.pick = S.pick.filter(c=>c!==t.value); save(); renderSummary();
+    if (recording) { stopRec(); startRec(); }
+    else if (!L[t.value].br && S.engine==="browser") { S.engine="bhashini"; $("#engine").value="bhashini"; toast(`${L[t.value].name} needs the Bhashini speech engine; switched.`); }
+    return;
+  }
+  if (t.id === "engine") { if (recording) stopRec(); S.engine = t.value; save(); if (t.value==="bhashini" && !bhReady()) $("#bhCard").open = true; return; }
+  if (t.closest("#trLangs")) { S.pick = [...document.querySelectorAll("#trLangs input:checked")].map(i=>i.value); save(); return; }
+  if (t.matches(".seg-act select")) {
+    const s = S.segs.find(x=>x.id===t.closest(".seg").dataset.id); if (!s) return;
+    s.manual = t.value === "auto" ? null : t.value; refreshRow(s); renderSummary(); save();
+  }
+});
+document.addEventListener("click", e => {
+  const del = e.target.closest(".seg .x");
+  if (del) { const id = del.closest(".seg").dataset.id; S.segs = S.segs.filter(s=>s.id!==id); invalidate(id); renderNotes(); renderSummary(); save(); return; }
+  const j = e.target.closest("[data-jump]");
+  if (j) { const row = document.querySelector(`.seg[data-id="${j.dataset.jump}"]`); if (row) { row.scrollIntoView({block:"center",behavior:"smooth"}); row.classList.add("flash"); setTimeout(()=>row.classList.remove("flash"),1400); row.querySelector(".txt").focus({preventScroll:true}); } }
+});
+document.addEventListener("keydown", e => { if (e.target.classList && (e.target.classList.contains("txt") || e.target.dataset.st) && e.key === "Enter") { e.preventDefault(); e.target.blur(); } });
+
+/* ================= Bhashini settings ================= */
+$("#bhTest").onclick = async () => {
+  bhCred = {user:$("#bh-user").value.trim(), key:$("#bh-key").value.trim(), ok:false}; BH.cache = {};
+  try { if ($("#bh-remember").checked) localStorage.setItem(BHKEY, JSON.stringify({user:bhCred.user,key:bhCred.key})); else localStorage.removeItem(BHKEY); } catch(e) {}
+  const msg = $("#bhMsg");
+  if (!bhReady()) { msg.textContent = "Enter both the User ID and the API key."; renderBh(); return; }
+  msg.textContent = "Testing…";
+  try {
+    const src = S.meta.lang === "en" ? "en" : S.meta.lang, tgt = src === "en" ? "as" : "en";
+    const [out] = await bhTranslate(["Friction stir welding joins metals without melting them."], "en", "as");
+    bhCred.ok = true; msg.textContent = "Connected. Sample translation (English → Assamese): " + out;
+  } catch(e) { bhCred.ok = false; msg.textContent = e.message; }
+  renderBh();
+};
+
+/* ================= translation for students ================= */
+let translating = false;
+$("#trBtn").onclick = async () => {
+  if (translating) return;
+  if (!S.segs.length) { toast("Record or type some notes first"); return; }
+  if (!S.pick.length) { toast("Tick at least one language"); return; }
+  if (!bhReady()) { $("#bhCard").open = true; $("#bhCard").scrollIntoView({behavior:"smooth"}); toast("Connect Bhashini first"); return; }
+  translating = true; $("#trBtn").disabled = true; const msg = $("#trMsg"); let done = 0, failed = [];
+  outer:
+  for (const code of S.pick) {
+    const t = S.tr[code] = S.tr[code] || {};
+    const todo = trItems().filter(([k])=>t[k]==null);
+    if (!todo.length) { done++; continue; }
+    msg.textContent = `Translating into ${L[code].name}…`;
+    /* group by source language: lecture lines and AI study notes can be in different languages */
+    const bySrc = {};
+    todo.forEach(it=>{ const s = srcOf(it[0]); (bySrc[s] = bySrc[s] || []).push(it); });
+    try {
+      for (const [src, items] of Object.entries(bySrc)) {
+        if (src === code) { items.forEach(([k,v])=>t[k]=v); continue; }
+        const out = await bhTranslate(items.map(i=>i[1]), src, code);
+        items.forEach(([k],i)=>{ if (out[i]) t[k] = out[i]; });
+      }
+      done++; save(); renderTrLangs();
+    } catch(e) { failed.push(L[code].name+": "+e.message); if (/rejected|reach Bhashini/.test(e.message)) break outer; }
+  }
+  translating = false; $("#trBtn").disabled = false;
+  msg.textContent = failed.length ? "" : `Done. ${done} language${done>1?"s":""} ready in the student file.`;
+  if (failed.length) showError("Some translations failed. " + failed.join(" · ")); else showError("");
+};
+
+/* ================= sharing ================= */
+function metaLine(m){ return [m.course, m.teacher, m.date].filter(Boolean).join(" · "); }
+function plainText(code){
+  const m = S.meta, t = code ? S.tr[code]||{} : {}, tx = s => t[s.id] || s.text;
+  const Lines = [(code && t._title) || m.title || "Lecture notes", metaLine(m), ""];
+  const hi = ORDER.map(k=>[k,S.segs.filter(s=>catOf(s)===k)]).filter(([,a])=>a.length);
+  if (hi.length){ Lines.push("HIGHLIGHTS"); hi.forEach(([k,a])=>{ Lines.push(CATS[k].toUpperCase()+":"); a.forEach(s=>Lines.push("• "+tx(s))); }); Lines.push(""); }
+  const st = S.study, sx = (k,v) => t["st:"+k] || v;
+  if (st) {
+    Lines.push("STUDY NOTES");
+    if (st.summary) Lines.push(sx("summary", st.summary), "");
+    st.topics.forEach((tp,i)=>{ Lines.push((sx(`topics.${i}.heading`, tp.heading)||"").toUpperCase()); tp.points.forEach((p,k)=>Lines.push("• "+sx(`topics.${i}.points.${k}`, p))); Lines.push(""); });
+    if (st.formulas.length) { Lines.push("FORMULAS"); st.formulas.forEach((f,i)=>Lines.push("• "+f.expr+(f.meaning?" : "+sx(`formulas.${i}.meaning`, f.meaning):""))); Lines.push(""); }
+    if (st.questions.length) { Lines.push("REVISION QUESTIONS"); st.questions.forEach((q,i)=>{ Lines.push(`${i+1}. ${sx(`questions.${i}.q`, q.q)}`); if (q.a) Lines.push("   Ans: "+sx(`questions.${i}.a`, q.a)); }); Lines.push(""); }
+  }
+  Lines.push("FULL NOTES"); S.segs.forEach(s=>Lines.push(`[${fmt(s.t)}] ${catOf(s)?"★ ":""}${tx(s)}`));
+  return Lines.join("\n");
+}
+$("#copyBtn").onclick = () => {
+  if (!S.segs.length) { toast("Nothing to copy yet"); return; }
+  const t = plainText();
+  navigator.clipboard.writeText(t).then(()=>toast("Copied. Paste it into WhatsApp, Moodle or email."), ()=>{
+    const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); toast("Copied"); });
+};
+$("#saveBtn").onclick = () => { download(`${slug(S.meta.title)}-${S.meta.date||today()}.medha.json`, JSON.stringify(S,null,1), "application/json"); toast("Editable copy saved. Open it here later to keep working."); };
+$("#exportBtn").onclick = () => { if (!S.segs.length) { toast("Record or type some notes first"); return; } download(`${slug(S.meta.title)}-${S.meta.date||today()}-notes.html`, studentHTML(), "text/html"); toast("Student notes downloaded. Share the file with your class."); };
+$("#previewBtn").onclick = () => { if (!S.segs.length) { toast("Nothing to preview yet"); return; } const w = window.open(URL.createObjectURL(new Blob([studentHTML()],{type:"text/html"})), "_blank"); if (!w) toast("Allow pop-ups to preview"); };
+$("#openBtn").onclick = () => $("#fileIn").click();
+$("#fileIn").onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try {
+    let txt = await f.text(), data;
+    if (/\.html?$/i.test(f.name)) { const m = txt.match(/<script type="application\/json" id="cs-data">([\s\S]*?)<\/script>/); if (!m) throw 0; data = JSON.parse(m[1]); }
+    else data = JSON.parse(txt);
+    if (!data || !Array.isArray(data.segs)) throw 0;
+    if (recording) stopRec();
+    const keep = {pick:S.pick, engine:S.engine};
+    S = normalise(Object.assign({}, keep, data)); baseElapsed = S.elapsed; save(); renderAll(); setRecUI(false,"Opened · review your notes"); toast("Notes opened");
+  } catch(err) { toast("That file isn't a Medha notes file."); }
+};
+
+/* ================= student file =================
+   One self-contained HTML page. Languages the teacher translated with Bhashini are packed
+   inside and switch instantly, offline. Other languages use the browser's built-in
+   translator (Chrome) or fall back to Google Translate links. */
+function studentHTML(){
+  const m = S.meta;
+  const keys = new Set(trItems().map(i=>i[0]));
+  const tr = {};
+  Object.entries(S.tr).forEach(([code,t])=>{ const o={}; let n=0; Object.entries(t).forEach(([id,v])=>{ if (keys.has(id)){o[id]=v; if(id!=="_title")n++;} }); if (n) tr[code]=o; });
+  const src = notesSrc();
+  const data = {lid:S.lid, meta:Object.assign({}, m, {lang:src}), segs:S.segs.map(s=>({id:s.id,t:s.t,text:s.text,manual:s.manual,ai:s.ai,aiDone:s.aiDone})), elapsed:S.elapsed, tr,
+    study:S.study, studyLang:S.studyLang};
+  const st = S.study, tt = (key, text, tag="span", cls="") => `<${tag}${cls?` class="${cls}"`:""} data-tr data-id="st:${key}">${esc(text)}</${tag}>`;
+  const studyHTML = !st ? "" : `<section class="card study"><h2>Study notes</h2>
+    ${st.summary?`<p>${tt("summary", st.summary)}</p>`:""}
+    ${st.topics.map((t,i)=>`<h3>${tt(`topics.${i}.heading`, t.heading)}</h3><ul>${t.points.map((p,k)=>`<li>${tt(`topics.${i}.points.${k}`, p)}</li>`).join("")}</ul>`).join("")}
+    ${st.formulas.length?`<h3>Formulas</h3><ul>${st.formulas.map((f,i)=>`<li><span class="fx">${esc(f.expr)}</span>${f.meaning?`<br>${tt(`formulas.${i}.meaning`, f.meaning, "span", "muted")}`:""}</li>`).join("")}</ul>`:""}
+    ${st.questions.length?`<h3>Revision questions</h3><ol class="qs">${st.questions.map((q,i)=>`<li>${tt(`questions.${i}.q`, q.q)}${q.a?`<details><summary>Show answer</summary>${tt(`questions.${i}.a`, q.a, "p")}</details>`:""}</li>`).join("")}</ol>`:""}
+  </section>`;
+  const groups = ORDER.map(k=>[k,S.segs.filter(s=>catOf(s)===k)]).filter(([,a])=>a.length);
+  const highlights = groups.map(([k,a])=>`<section class="grp"><h3 class="t-${k}">${CATS[k]}</h3><ul>${a.map(s=>`<li data-tr data-id="${s.id}">${esc(s.text)}</li>`).join("")}</ul></section>`).join("");
+  const notes = S.segs.map(s=>{ const c=catOf(s); return `<p class="ln"><span class="ts">${fmt(s.t)}</span><span class="${c?"h-"+c:""}" data-tr data-id="${s.id}">${esc(s.text)}</span></p>`; }).join("");
+  const json = JSON.stringify(data).replace(/</g,"\\u003c");
+  const packed = LANGS.filter(l=>tr[l.code]);
+  const others = LANGS.filter(l=>!tr[l.code] && l.gt && l.code!==src);
+  const srcName = L[src] ? L[src].name : "Original";
+  const opts = `<option value="__orig">${esc(srcName)} (original)</option>`
+    + (packed.length?`<optgroup label="Translated by your teacher · works offline">${packed.map(l=>`<option value="${l.code}">${l.name}</option>`).join("")}</optgroup>`:"")
+    + `<optgroup label="Machine translation · needs internet">${others.map(l=>`<option value="g:${l.gt}">${l.name}</option>`).join("")}</optgroup>`;
+  return `<!doctype html><html lang="${esc(src)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(m.title||"Lecture notes")}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@700&family=Noto+Sans:wght@400;600&display=swap">
+<style>
+:root{--bg:#f6f8f9;--surface:#fff;--ink:#14212b;--muted:#5a6a76;--line:#d8e0e5;--brand:#0e6a70;--brand-ink:#fff;
+--hl-key:#fff0a3;--hl-def:#dcebff;--hl-formula:#d9f2e2;--hl-exam:#ffe0e7;--tg-key:#6f5300;--tg-def:#1c4c8c;--tg-formula:#1b6a3c;--tg-exam:#9d1f3d;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1418;--surface:#141e24;--ink:#e3ebef;--muted:#93a4ae;--line:#26343c;--brand:#38b3b9;--brand-ink:#04191b;
+--hl-key:#4a3e08;--hl-def:#15304e;--hl-formula:#163a25;--hl-exam:#4a1826;--tg-key:#f3d25e;--tg-def:#9cc3ff;--tg-formula:#86dca6;--tg-exam:#ff9fb4;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.7 "Noto Sans",system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:24px 16px 56px;display:grid;gap:20px}
+h1{font:700 clamp(24px,5vw,34px)/1.2 Sora,"Noto Sans",system-ui,sans-serif;margin:0;text-wrap:balance}
+h2{font:700 19px Sora,system-ui,sans-serif;margin:0 0 10px}
+.meta{color:var(--muted);margin:6px 0 0}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.bar label{font-weight:600}
+select,button{font:inherit;font-size:15px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:7px 12px;max-width:100%}
+button{cursor:pointer}
+#st{width:100%;font-size:14px;color:var(--muted)}#st:empty{display:none}
+#links{display:flex;flex-wrap:wrap;gap:8px;width:100%}#links a{color:var(--brand);font-weight:600}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.grp{margin-bottom:12px}.grp h3{font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px}
+.grp ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.t-key{color:var(--tg-key)}.t-def{color:var(--tg-def)}.t-formula{color:var(--tg-formula)}.t-exam{color:var(--tg-exam)}
+.h-key{background:var(--hl-key)}.h-def{background:var(--hl-def)}.h-formula{background:var(--hl-formula)}.h-exam{background:var(--hl-exam)}
+.ln{display:grid;grid-template-columns:52px 1fr;gap:10px;margin:0 0 6px}.ln span[class^=h-]{padding:1px 4px;border-radius:4px}
+.ts{font:500 12px/2.2 ui-monospace,monospace;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted);margin-bottom:12px}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+footer{font-size:13px;color:var(--muted)}
+.study h3{font-size:15px;margin:14px 0 4px}.study ul,.study ol{margin:0;padding-left:22px;display:grid;gap:4px}
+.fx{font-family:ui-monospace,monospace;font-size:15px}.muted{color:var(--muted);font-size:15px}
+.qs details{margin:2px 0 6px}.qs summary{cursor:pointer;color:var(--brand);font-size:14px;font-weight:600}.qs details p{margin:4px 0 0;color:var(--muted)}
+@media print{.qs details{display:block}.qs summary{display:none}.bar{display:none}body{background:#fff}.card{border:0;padding:0}}
+</style></head><body><div class="wrap">
+<header><h1 data-tr data-id="_title">${esc(m.title||"Lecture notes")}</h1><p class="meta">${esc(metaLine(m))}${S.elapsed?" · "+fmt(S.elapsed)+" lecture":""}</p></header>
+<div class="bar" role="group" aria-label="Language">
+ <label for="lang">Read in</label><select id="lang">${opts}</select>
+ <button id="pr">Print or save PDF</button>
+ <div id="st" aria-live="polite">${packed.length?"Your teacher translated these notes into "+packed.map(l=>l.name).join(", ")+" with Bhashini.":""}</div><div id="links" hidden></div>
+</div>
+${studyHTML}
+${highlights?`<section class="card"><h2>Highlights</h2>${highlights}</section>`:""}
+<section class="card"><h2>Full lecture notes</h2>
+<div class="legend"><span><i class="h-exam"></i>Exam tip</span><span><i class="h-def"></i>Definition</span><span><i class="h-formula"></i>Formula</span><span><i class="h-key"></i>Key point</span></div>
+${notes}</section>
+<footer>Notes recorded in class and reviewed by the teacher, made with Medha. Translations by Bhashini (MeitY, Govt. of India) or machine translation can get technical terms wrong; switch back to the original when in doubt.</footer>
+</div>
+<script type="application/json" id="cs-data">${json}<\/script>
+<script>
+(function(){
+ var D=JSON.parse(document.getElementById("cs-data").textContent);
+ var src=(D.meta&&D.meta.lang)||"en";
+ var els=[].slice.call(document.querySelectorAll("[data-tr]"));
+ els.forEach(function(e){e.dataset.orig=e.textContent;});
+ var st=document.getElementById("st"),links=document.getElementById("links"),sel=document.getElementById("lang"),intro=st.textContent,run=0;
+ function wait(p,ms){return Promise.race([p,new Promise(function(r){setTimeout(function(){r(null);},ms);})]);}
+ function original(){els.forEach(function(e){e.textContent=e.dataset.orig;});document.documentElement.lang=src;}
+ function fallback(tl){
+  var chunks=[],cur="";
+  els.forEach(function(e){var t=e.dataset.orig;if((cur+"\\n"+t).length>1500){chunks.push(cur);cur=t;}else cur=cur?cur+"\\n"+t:t;});
+  if(cur)chunks.push(cur);
+  links.innerHTML="";
+  chunks.forEach(function(c,i){var a=document.createElement("a");a.target="_blank";a.rel="noopener";
+   a.href="https://translate.google.com/?sl="+src+"&tl="+encodeURIComponent(tl)+"&text="+encodeURIComponent(c)+"&op=translate";
+   a.textContent="Part "+(i+1)+" of "+chunks.length;links.appendChild(a);});
+  st.textContent="This browser can't translate inside the page. Open each part in Google Translate:";links.hidden=false;
+ }
+ sel.onchange=async function(){
+  var v=sel.value,my=++run;links.hidden=true;
+  if(v==="__orig"){original();st.textContent=intro;return;}
+  if(v.indexOf("g:")!==0){var t=D.tr[v]||{};els.forEach(function(e){e.textContent=t[e.dataset.id]||e.dataset.orig;});document.documentElement.lang=v;st.textContent="Translated by your teacher with Bhashini.";return;}
+  var tl=v.slice(2);original();
+  if("Translator" in self){
+   try{
+    st.textContent="Checking translation on this device…";
+    var av=await wait(Translator.availability({sourceLanguage:src,targetLanguage:tl.split("-")[0]}),6000);
+    if(my!==run)return;
+    if(av&&av!=="unavailable"){
+     st.textContent="Preparing translation…";
+     var tr=await wait(Translator.create({sourceLanguage:src,targetLanguage:tl.split("-")[0],monitor:function(m){m.addEventListener("downloadprogress",function(e){st.textContent="Downloading language pack… "+Math.round(e.loaded*100)+"%";});}}),120000);
+     if(!tr)throw 0;
+     for(var i=0;i<els.length;i++){if(my!==run)return;els[i].textContent=await tr.translate(els[i].dataset.orig);if(i%4===0)st.textContent="Translating… "+(i+1)+" of "+els.length;}
+     st.textContent="Translated on this device. Technical terms may need checking against the original.";return;
+    }
+   }catch(err){}
+  }
+  if(my===run)fallback(tl);
+ };
+ document.getElementById("pr").onclick=function(){window.print();};
+})();
+<\/script></body></html>`;
+}
+
+/* ================= classes, sign-in and approval (Supabase) =================
+   Who may see what is enforced by the database's row-level security (supabase-setup.sql);
+   this code only shows each person what the database already lets them see. */
+const CFG = window.MEDHA_CONFIG || {};
+let sb = null, me = null, teach = [], joined = [], loadedOnce = false;
+const redirectURL = () => location.origin + location.pathname;
+function friendly(msg){
+  msg = String(msg||"");
+  if (/rate limit/i.test(msg)) return "Too many sign-in emails were sent. Wait a few minutes, or continue with Google.";
+  if (/expired|invalid.*(otp|token)|token.*invalid/i.test(msg)) return "That code is wrong or has expired. Ask for a new one.";
+  if (/failed to fetch|network/i.test(msg)) return "Could not reach the server. Check the internet connection.";
+  if (/JWT|not authenticated|Sign in first/i.test(msg)) return "Your sign-in has expired. Sign in again.";
+  if (/provider is not enabled/i.test(msg)) return "Google sign-in isn't switched on in Supabase yet. Use email for now.";
+  return msg;
+}
+const need = ({data, error}) => { if (error) throw new Error(friendly(error.message)); return data; };
+function busy(btn, on){ if (btn) btn.disabled = on; }
+const dateLabel = d => { try { return new Date(d).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}); } catch(e) { return d||""; } };
+let confirmKey = null;
+function twoClick(key, msg){ if (confirmKey === key) { confirmKey = null; return true; } confirmKey = key; setTimeout(()=>{ if (confirmKey===key) confirmKey=null; }, 4000); toast(msg); return false; }
+
+function initCloud(){
+  if (CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase && window.supabase.createClient) {
+    sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true}});
+    sb.auth.onAuthStateChange((ev, session) => { const u = session && session.user || null; if ((u&&u.id) !== (me&&me.id)) { me = u; onUser(); } });
+    sb.auth.getSession().then(({data}) => { me = data.session && data.session.user || null; onUser(); });
+  }
+  onUser();
+}
+function onUser(){
+  renderAcct();
+  $("#cloudOff").hidden = !!sb;
+  $("#signinCard").hidden = !sb || !!me;
+  $("#classesOn").hidden = !sb || !me;
+  if (!me) { teach = []; joined = []; renderTeach(); renderJoined(); renderPublish(); }
+  else loadAll();
+}
+function renderAcct(){
+  const a = $("#acct");
+  if (!sb) { a.innerHTML = ""; return; }
+  a.innerHTML = me ? `<span>${esc(me.email || "Signed in")}</span><button class="btn" id="signOut">Sign out</button>`
+                   : `<button class="btn pri" id="signInTop">Sign in</button>`;
+}
+function setView(v){
+  try { localStorage.setItem("medha-view", v); } catch(e) {}
+  $("#view-record").hidden = v !== "record"; $("#view-classes").hidden = v !== "classes";
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected", b.dataset.view === v));
+  if (v === "classes" && me) loadAll();
+}
+document.querySelector(".tabs").addEventListener("click", e => { const b = e.target.closest("button[data-view]"); if (b) setView(b.dataset.view); });
+
+/* ---------- sign-in ---------- */
+document.addEventListener("click", async e => {
+  const id = e.target.id;
+  if (id === "signInTop") { setView("classes"); $("#si-email").focus(); }
+  else if (id === "signOut") { await sb.auth.signOut(); me = null; onUser(); toast("Signed out"); }
+});
+$("#googleBtn").onclick = async () => {
+  const {error} = await sb.auth.signInWithOAuth({provider:"google", options:{redirectTo: redirectURL()}});
+  if (error) $("#siMsg").textContent = friendly(error.message);
+};
+$("#sendCode").onclick = async () => {
+  const email = $("#si-email").value.trim(), msg = $("#siMsg");
+  if (!/^\S+@\S+\.\S+$/.test(email)) { msg.textContent = "Enter a valid email address."; return; }
+  busy($("#sendCode"), true); msg.textContent = "Sending…";
+  const {error} = await sb.auth.signInWithOtp({email, options:{emailRedirectTo: redirectURL(), shouldCreateUser:true}});
+  busy($("#sendCode"), false);
+  if (error) { msg.textContent = friendly(error.message); return; }
+  $("#codeStep").hidden = false; $("#si-code").focus();
+  msg.textContent = `Email sent to ${email}. Tap the link in it, or type the code here.`;
+};
+$("#verifyCode").onclick = async () => {
+  const email = $("#si-email").value.trim(), token = $("#si-code").value.replace(/\s/g,""), msg = $("#siMsg");
+  if (!token) { msg.textContent = "Type the code from the email."; return; }
+  busy($("#verifyCode"), true); msg.textContent = "Checking…";
+  const {data, error} = await sb.auth.verifyOtp({email, token, type:"email"});
+  busy($("#verifyCode"), false);
+  if (error) { msg.textContent = friendly(error.message); return; }
+  msg.textContent = ""; $("#codeStep").hidden = true; $("#si-code").value = "";
+  me = data.user || (data.session && data.session.user); onUser(); toast("Signed in");
+};
+$("#si-code").addEventListener("keydown", e => { if (e.key === "Enter") $("#verifyCode").click(); });
+
+/* ---------- loading everything this person may see ---------- */
+let loading = null;
+async function loadAll(){
+  if (!sb || !me) return;
+  if (loading) return loading;
+  loading = (async () => {
+    try {
+      const cls = need(await sb.from("classes").select("id,name,code,created_at").eq("teacher_id", me.id).order("created_at"));
+      const ids = cls.map(c=>c.id);
+      const mem = ids.length ? need(await sb.from("memberships").select("class_id,student_id,student_name,roll_no,email,status,requested_at").in("class_id", ids).order("requested_at")) : [];
+      const lec = ids.length ? need(await sb.from("lectures").select("id,class_id,local_id,title,lecture_date,published_at,updated_at").in("class_id", ids).order("published_at",{ascending:false})) : [];
+      teach = cls.map(c=>({...c, members:mem.filter(m=>m.class_id===c.id), lectures:lec.filter(l=>l.class_id===c.id)}));
+      const my = need(await sb.from("memberships").select("class_id,status,requested_at,classes(name)").eq("student_id", me.id).order("requested_at",{ascending:false}));
+      const ok = my.filter(m=>m.status==="approved").map(m=>m.class_id);
+      const jl = ok.length ? need(await sb.from("lectures").select("id,class_id,title,lecture_date,published_at").in("class_id", ok).order("published_at",{ascending:false})) : [];
+      joined = my.map(m=>({id:m.class_id, name:(m.classes&&m.classes.name)||"Class", status:m.status, lectures:jl.filter(l=>l.class_id===m.class_id)}));
+      showError("");
+    } catch(e) { showError(e.message); }
+    renderTeach(); renderJoined(); renderPublish();
+    if (!loadedOnce) { loadedOnce = true;
+      if (!S.segs.length && !teach.length && joined.length) setView("classes"); }
+    loading = null;
+  })();
+  return loading;
+}
+$("#refreshBtn").onclick = () => loadAll().then(()=>toast("Up to date"));
+
+/* ---------- teacher side ---------- */
+const joinLink = c => redirectURL() + "#join=" + c.code;
+function renderTeach(){
+  const box = $("#teachList");
+  const pend = teach.reduce((a,c)=>a+c.members.filter(m=>m.status==="pending").length,0);
+  const b = $("#pendBadge"); b.textContent = pend; b.hidden = !pend; b.title = pend + " student request" + (pend>1?"s":"") + " waiting";
+  if (!teach.length) { box.innerHTML = `<p class="hint">Create a class, then share its code or join link with your students. You decide who gets in.</p>`; return; }
+  box.innerHTML = teach.map(c=>{
+    const pending = c.members.filter(m=>m.status==="pending"), approved = c.members.filter(m=>m.status==="approved");
+    const who = m => `<span class="who"><b>${esc(m.student_name)}</b><small>${esc([m.roll_no, m.email].filter(Boolean).join(" · "))}</small></span>`;
+    return `<div class="cls" data-cid="${c.id}">
+      <div class="cls-h"><h3>${esc(c.name)}</h3><span class="btns"><span class="code" title="Join code">${esc(c.code)}</span><button class="btn" data-act="copylink">Copy join link</button></span></div>
+      <p class="sub">Requests waiting · ${pending.length}</p>
+      <div class="rows">${pending.length ? pending.map(m=>`<div class="row">${who(m)}<span class="btns"><button class="btn pri" data-act="approve" data-sid="${m.student_id}">Approve</button><button class="btn" data-act="decline" data-sid="${m.student_id}">Decline</button></span></div>`).join("")
+        : `<p class="small">No one is waiting.</p>`}</div>
+      ${pending.length>1?`<div class="btns"><button class="btn" data-act="approveall">Approve all ${pending.length}</button></div>`:""}
+      <details><summary class="sub" style="cursor:pointer">Approved students · ${approved.length}</summary>
+        <div class="rows" style="margin-top:8px">${approved.length ? approved.map(m=>`<div class="row">${who(m)}<button class="btn danger" data-act="remove" data-sid="${m.student_id}">Remove</button></div>`).join("") : `<p class="small">None yet.</p>`}</div></details>
+      <p class="sub">Published lectures · ${c.lectures.length}</p>
+      <div class="rows">${c.lectures.length ? c.lectures.map(l=>`<div class="row"><span class="who"><b>${esc(l.title||"Untitled lecture")}</b><small>${esc(dateLabel(l.lecture_date||l.published_at))}</small></span><span class="btns"><button class="btn" data-act="open" data-lid="${l.id}">Open</button><button class="btn danger" data-act="unpublish" data-lid="${l.id}">Unpublish</button></span></div>`).join("")
+        : `<p class="small">Nothing published yet. Publish from the Record &amp; edit tab.</p>`}</div>
+      <div class="btns"><button class="btn danger" data-act="delclass">Delete class</button></div>
+    </div>`;
+  }).join("");
+}
+$("#createClass").onclick = async () => {
+  const name = $("#newClass").value.trim(); if (!name) { $("#newClass").focus(); toast("Give the class a name"); return; }
+  busy($("#createClass"), true);
+  try {
+    let r = await sb.from("classes").insert({name}).select("id").single();
+    if (r.error && /duplicate|unique/i.test(r.error.message)) r = await sb.from("classes").insert({name}).select("id").single();
+    need(r); $("#newClass").value = ""; await loadAll(); toast("Class created. Share its code with your students.");
+  } catch(e) { showError(e.message); }
+  busy($("#createClass"), false);
+};
+$("#newClass").addEventListener("keydown", e => { if (e.key === "Enter") $("#createClass").click(); });
+async function setStatus(cid, sids, status){
+  need(await sb.from("memberships").update({status, decided_at:new Date().toISOString()}).eq("class_id", cid).in("student_id", sids));
+}
+$("#teachList").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  const cid = b.closest("[data-cid]").dataset.cid, c = teach.find(x=>x.id===cid), act = b.dataset.act;
+  try {
+    if (act === "copylink") {
+      const t = joinLink(c);
+      try { await navigator.clipboard.writeText(t); toast("Join link copied. Send it to your class."); } catch(err) { prompt("Copy this link:", t); }
+      return;
+    }
+    if (act === "open") { await openLecture(b.dataset.lid); return; }
+    busy(b, true);
+    if (act === "approve") { await setStatus(cid, [b.dataset.sid], "approved"); toast("Approved"); }
+    else if (act === "approveall") { await setStatus(cid, c.members.filter(m=>m.status==="pending").map(m=>m.student_id), "approved"); toast("All approved"); }
+    else if (act === "decline" || act === "remove") {
+      if (act === "remove" && !twoClick("rm"+b.dataset.sid, "Click Remove again to take this student out of the class.")) { busy(b,false); return; }
+      await setStatus(cid, [b.dataset.sid], "removed"); toast(act === "remove" ? "Student removed" : "Request declined");
+    }
+    else if (act === "unpublish") {
+      if (!twoClick("un"+b.dataset.lid, "Click Unpublish again to take these notes away from students.")) { busy(b,false); return; }
+      need(await sb.from("lectures").delete().eq("id", b.dataset.lid)); toast("Unpublished");
+    }
+    else if (act === "delclass") {
+      if (!twoClick("dc"+cid, `Click Delete class again to delete "${c.name}", its student list and its published notes.`)) { busy(b,false); return; }
+      need(await sb.from("classes").delete().eq("id", cid)); toast("Class deleted");
+    }
+    await loadAll();
+  } catch(err) { showError(err.message); busy(b, false); }
+});
+
+/* ---------- publishing from the Record & edit tab ---------- */
+function renderPublish(){
+  const row = $("#pubRow"), hint = $("#pubHint");
+  if (!sb) { hint.textContent = "Publishing to classes needs the one-time setup in the README (Supabase)."; row.hidden = true; return; }
+  if (!me) { hint.innerHTML = "Sign in under <b>Classes</b> to publish notes that only the students you approve can open."; row.hidden = true; return; }
+  if (!teach.length) { hint.innerHTML = "Create a class under <b>Classes</b> first."; row.hidden = true; return; }
+  const prev = $("#pubClass").value;
+  $("#pubClass").innerHTML = teach.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  if (prev && teach.some(c=>c.id===prev)) $("#pubClass").value = prev;
+  const c = teach.find(x=>x.id===$("#pubClass").value), already = c && c.lectures.some(l=>l.local_id===S.lid);
+  const n = c ? c.members.filter(m=>m.status==="approved").length : 0;
+  hint.textContent = already ? "Already published to this class. Publishing again replaces it with your latest edits." : `Only approved students (${n} in this class) will be able to open it.`;
+  $("#pubBtn").textContent = already ? "Update" : "Publish";
+  row.hidden = false;
+}
+$("#pubClass").onchange = renderPublish;
+$("#pubBtn").onclick = async () => {
+  if (!S.segs.length) { toast("Record or type some notes first"); return; }
+  const cid = $("#pubClass").value, c = teach.find(x=>x.id===cid); if (!c) return;
+  busy($("#pubBtn"), true); $("#pubMsg").textContent = "Publishing…";
+  try {
+    need(await sb.from("lectures").upsert({class_id:cid, local_id:S.lid, title:S.meta.title||"Untitled lecture", lecture_date:S.meta.date||null,
+      data:{meta:S.meta, elapsed:S.elapsed, segments:S.segs.length, languages:Object.keys(S.tr), study:!!S.study},
+      html:studentHTML(), updated_at:new Date().toISOString()}, {onConflict:"class_id,local_id"}).select("id").single());
+    $("#pubMsg").textContent = `Published to ${c.name}.`; toast("Published. Approved students can open it now.");
+    await loadAll();
+  } catch(e) { $("#pubMsg").textContent = ""; showError(e.message); }
+  busy($("#pubBtn"), false);
+};
+
+/* ---------- student side ---------- */
+function renderJoined(){
+  const box = $("#joinList");
+  if (!joined.length) { box.innerHTML = `<p class="hint">Ask your teacher for the class code, or open the join link they sent you.</p>`; return; }
+  const label = {pending:"Waiting for approval", approved:"Approved", removed:"Not approved"};
+  box.innerHTML = joined.map(j=>`<div class="cls" data-jid="${j.id}">
+    <div class="cls-h"><h3>${esc(j.name)}</h3><span class="pill ${j.status}">${label[j.status]}</span></div>
+    ${j.status === "approved" ? `<div class="rows">${j.lectures.length ? j.lectures.map(l=>`<div class="row"><span class="who"><b>${esc(l.title||"Untitled lecture")}</b><small>${esc(dateLabel(l.lecture_date||l.published_at))}</small></span><button class="btn pri" data-act="read" data-lid="${l.id}">Read</button></div>`).join("") : `<p class="small">No notes published yet.</p>`}</div>`
+      : j.status === "pending" ? `<p class="small">Your teacher will see your request. Notes appear here once you're approved.</p>`
+      : `<p class="small">Your teacher has not approved this request. Speak to them if this is a mistake.</p>`}
+    <div class="btns"><button class="btn" data-act="leave">Leave class</button></div>
+  </div>`).join("");
+}
+try { const p = JSON.parse(localStorage.getItem("medha-student")||"{}"); $("#j-name").value = p.name||""; $("#j-roll").value = p.roll||""; } catch(e) {}
+$("#joinBtn").onclick = async () => {
+  const code = $("#j-code").value.trim().toUpperCase(), name = $("#j-name").value.trim(), roll = $("#j-roll").value.trim(), msg = $("#joinMsg");
+  if (!code) { msg.textContent = "Enter the class code."; return; }
+  if (!name) { msg.textContent = "Enter your name so your teacher recognises you."; return; }
+  try { localStorage.setItem("medha-student", JSON.stringify({name, roll})); } catch(e) {}
+  busy($("#joinBtn"), true); msg.textContent = "Sending…";
+  try {
+    const r = need(await sb.rpc("join_class", {p_code:code, p_name:name, p_roll:roll}));
+    msg.textContent = `Request sent to the teacher of ${r.name}.`; $("#j-code").value = "";
+    try { sessionStorage.removeItem("medha-join"); } catch(e) {}
+    await loadAll();
+  } catch(e) { msg.textContent = e.message; }
+  busy($("#joinBtn"), false);
+};
+$("#joinList").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  const jid = b.closest("[data-jid]").dataset.jid;
+  if (b.dataset.act === "read") { await openLecture(b.dataset.lid); return; }
+  if (b.dataset.act === "leave") {
+    if (!twoClick("lv"+jid, "Click Leave class again to confirm. You'd need approval to rejoin.")) return;
+    try { need(await sb.from("memberships").delete().eq("class_id", jid).eq("student_id", me.id)); toast("You left the class"); await loadAll(); } catch(err) { showError(err.message); }
+  }
+});
+
+/* ---------- reading a lecture ---------- */
+async function openLecture(id){
+  try {
+    const l = need(await sb.from("lectures").select("title,html").eq("id", id).single());
+    $("#readerTitle").textContent = l.title || "Lecture notes";
+    $("#readerFrame").srcdoc = l.html || "<p>These notes are empty.</p>";
+    $("#reader").hidden = false; document.body.style.overflow = "hidden"; $("#readerClose").focus();
+  } catch(e) { showError(e.message.includes("0 rows") ? "These notes are no longer available." : e.message); }
+}
+function closeReader(){ $("#reader").hidden = true; $("#readerFrame").srcdoc = ""; document.body.style.overflow = ""; }
+$("#readerClose").onclick = closeReader;
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#reader").hidden) closeReader(); });
+
+/* a join link looks like  …/medha/#join=AB12CD */
+function readJoinLink(){
+  const m = location.hash.match(/^#join=([A-Za-z0-9]{4,10})$/);
+  let code = m && m[1].toUpperCase();
+  try { if (code) sessionStorage.setItem("medha-join", code); else code = sessionStorage.getItem("medha-join"); } catch(e) {}
+  if (code) { $("#j-code").value = code; setView("classes"); if (m) history.replaceState(null, "", location.pathname); }
+  return !!code;
+}
+
+/* ================= boot ================= */
+{ let v = "record"; try { v = localStorage.getItem("medha-view") || "record"; } catch(e) {} setView(v === "classes" ? "classes" : "record"); }
+readJoinLink();
+initCloud();
+renderAll();
+if (!SR && S.engine === "browser") showError("Live transcription with the browser engine needs Chrome or Edge. In other browsers, switch the speech engine to Bhashini, or run the demo.");
+if (S.segs.length) { baseElapsed = S.elapsed; setRecUI(false, "Draft restored · review or continue"); $("#interim").textContent = "Your last lecture was restored from this browser."; }
+window.addEventListener("beforeunload", e => { if (recording) { e.preventDefault(); e.returnValue = ""; } });
+</script>
+</body>
+</html>
