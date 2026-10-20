@@ -1800,7 +1800,9 @@ function showGate(msg){
   $("#gate").hidden = false; document.body.style.overflow = "hidden"; setTimeout(()=>$("#gateCode").focus(), 50);
 }
 async function checkAccess(){
-  if (!ACCESS.required) return;
+  /* fail closed: the code screen shows unless config.js explicitly says access codes are not required */
+  if (ACCESS.required === false) return;
+  if (!(ACCESS.codes||[]).length) { showGate("Medha can't check access codes yet: the settings file (config.js) on the website is missing or out of date. If you run this Medha, upload the latest config.js to GitHub."); return; }
   let saved = ""; try { saved = localStorage.getItem(ACCESS_KEY) || ""; } catch(e) {}
   if (saved && await codeOK(saved)) return;
   if (saved) { try { localStorage.removeItem(ACCESS_KEY); } catch(e) {} showGate("This access code is no longer active. Contact the owner of Medha for a new one."); }
