@@ -6,6 +6,6 @@
 // database rules in supabase-setup.sql, not by keeping this key secret.
 // Leave both empty to use Medha without classes (recording, AI and sharing files still work).
 window.MEDHA_CONFIG = {
-  supabaseUrl: "",       // e.g. "https://rhsvetbzhflehhdxqmuw.supabase.co"
-  supabaseAnonKey: ""    // e.g. "sb_publishable_G7gECcKfgR-ks_XLqzSxeg_YBurZuKp"
+  supabaseUrl: "https://rhsvetbzhflehhdxqmuw.supabase.co",       // e.g. "https://rhsvetbzhflehhdxqmuw.supabase.co"
+  supabaseAnonKey: "sb_publishable_G7gECcKfgR-ks_XLqzSxeg_YBurZuKp"    // e.g. "sb_publishable_G7gECcKfgR-ks_XLqzSxeg_YBurZuKp"
 };
